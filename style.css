@@ -411,34 +411,53 @@ h1, h2, h3, h4, h5, h6 {
 
 .search-input {
     width: 100%;
-    padding: 12px 15px 12px 45px;
+    padding: 16px 20px 16px 50px;
     background: hsl(var(--surface-color));
     border: 2px solid hsl(var(--border-color));
-    border-radius: 25px;
+    border-radius: var(--morph-radius-lg);
     color: hsl(var(--text-primary));
+    font-family: var(--font-body);
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: var(--morph-transition);
+    box-shadow: 0 4px 12px hsla(var(--shadow-color), 0.05);
 }
 
 .search-input:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 6px 20px hsla(var(--primary-color), 0.1);
+    transform: scale(1.02);
+}
+
+.search-input::placeholder {
+    color: hsl(var(--text-secondary));
+    font-style: italic;
 }
 
 .sort-select {
-    padding: 12px 20px;
+    padding: 16px 24px;
     background: hsl(var(--surface-color));
     border: 2px solid hsl(var(--border-color));
-    border-radius: 25px;
+    border-radius: var(--morph-radius-lg);
     color: hsl(var(--text-primary));
+    font-family: var(--font-heading);
     font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: border-color 0.3s ease;
+    transition: var(--morph-transition);
+    box-shadow: 0 4px 12px hsla(var(--shadow-color), 0.05);
 }
 
 .sort-select:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 6px 20px hsla(var(--primary-color), 0.1);
+    transform: scale(1.02);
+}
+
+.sort-select:hover {
+    border-color: var(--secondary-color);
+    transform: scale(1.01);
 }
 
 /* Tournament Grid */

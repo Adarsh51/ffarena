@@ -92,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function() {
     startCountdowns();
     setupEventListeners();
     setupNavigation();
-    initializePage();
 });
 
 // LocalStorage Player Profile Management
@@ -149,105 +148,6 @@ function toggleTheme() {
     localStorage.setItem('ffArenaTheme', newTheme);
 }
 
-// Receipts Management
-function saveReceipt(receiptData) {
-    const receipts = getStoredReceipts();
-    receipts.push(receiptData);
-    localStorage.setItem('ffArenaReceipts', JSON.stringify(receipts));
-}
-
-function getStoredReceipts() {
-    const stored = localStorage.getItem('ffArenaReceipts');
-    return stored ? JSON.parse(stored) : [];
-}
-
-// Initialize page-specific functionality
-function initializePage() {
-    const currentPage = window.location.pathname;
-    
-    if (currentPage.includes('receipts.html')) {
-        initializeReceiptsPage();
-    }
-}
-
-function initializeReceiptsPage() {
-    loadPlayerProfile();
-    displayPlayerInfo();
-    loadReceipts();
-}
-
-function displayPlayerInfo() {
-    const playerInfoEl = document.getElementById('player-info');
-    const nameEl = document.getElementById('player-display-name');
-    const uidEl = document.getElementById('player-display-uid');
-    
-    if (playerProfile && playerInfoEl && nameEl && uidEl) {
-        nameEl.textContent = playerProfile.name;
-        uidEl.textContent = `UID: ${playerProfile.uid}`;
-        playerInfoEl.classList.remove('hidden');
-    }
-}
-
-function loadReceipts() {
-    const receipts = getStoredReceipts();
-    const noReceiptsEl = document.getElementById('no-receipts');
-    const receiptsListEl = document.getElementById('receipts-list');
-    
-    if (!receiptsListEl) return;
-    
-    if (receipts.length === 0) {
-        if (noReceiptsEl) noReceiptsEl.classList.remove('hidden');
-        receiptsListEl.classList.add('hidden');
-    } else {
-        if (noReceiptsEl) noReceiptsEl.classList.add('hidden');
-        receiptsListEl.classList.remove('hidden');
-        renderReceipts(receipts);
-    }
-}
-
-function renderReceipts(receipts) {
-    const receiptsListEl = document.getElementById('receipts-list');
-    if (!receiptsListEl) return;
-    
-    receiptsListEl.innerHTML = '';
-    
-    receipts.forEach(receipt => {
-        const receiptCard = document.createElement('div');
-        receiptCard.className = 'receipt-card';
-        receiptCard.innerHTML = `
-            <div class="receipt-header">
-                <h3 class="receipt-title">${receipt.tournamentName}</h3>
-                <span class="receipt-date">${new Date(receipt.date).toLocaleDateString()}</span>
-            </div>
-            <div class="receipt-details">
-                <div class="receipt-detail">
-                    <div class="receipt-detail-label">Receipt ID</div>
-                    <div class="receipt-detail-value receipt-id">${receipt.receiptId}</div>
-                </div>
-                <div class="receipt-detail">
-                    <div class="receipt-detail-label">Amount</div>
-                    <div class="receipt-detail-value receipt-amount">₹${receipt.amount}</div>
-                </div>
-                <div class="receipt-detail">
-                    <div class="receipt-detail-label">Mode</div>
-                    <div class="receipt-detail-value">${receipt.mode}</div>
-                </div>
-                <div class="receipt-detail">
-                    <div class="receipt-detail-label">Time Slot</div>
-                    <div class="receipt-detail-value">${receipt.timeSlot}</div>
-                </div>
-            </div>
-            <div class="receipt-actions">
-                <button class="download-receipt-btn" onclick="downloadStoredReceipt('${receipt.receiptId}')">
-                    <i class="fas fa-download"></i>
-                    Download Again
-                </button>
-            </div>
-        `;
-        receiptsListEl.appendChild(receiptCard);
-    });
-}
-
 // Enhanced Tournament Rendering
 function renderTournaments() {
     if (filteredTournaments.length === 0) {
@@ -265,12 +165,15 @@ function renderTournaments() {
 
     if (tournamentList) {
         tournamentList.innerHTML = '';
-        filteredTournaments.forEach(tournament => {
+        filteredTournaments.forEach((tournament, index) => {
             const card = document.createElement('div');
             card.className = 'tournament-card';
             
             const timeRemaining = getTimeRemaining(tournament.date);
             const isExpired = timeRemaining <= 0;
+            
+            // Add staggered animation delay
+            card.style.animationDelay = `${index * 0.1}s`;
             
             card.innerHTML = `
                 <h3>${tournament.name}</h3>
@@ -319,7 +222,6 @@ function openPaymentModal(tournament) {
     // Reset form state
     document.getElementById('upi-id').value = 'tournament@paytm';
     document.getElementById('upi-radio').checked = true;
-    document.getElementById('download-btn').disabled = true;
     
     togglePaymentMethod();
     paymentModal.classList.add('open');
@@ -340,16 +242,16 @@ function addTournamentForm(tournament) {
     tournamentForm.id = 'tournament-form';
     tournamentForm.innerHTML = `
         <div class="form-group">
-            <label for="tournament-type">Tournament Type:</label>
             <input type="text" id="tournament-type" value="${tournament.mode}" readonly>
+            <label for="tournament-type">Tournament Type</label>
         </div>
         
         <div class="form-group">
-            <label for="time-slot">Select Time Slot:</label>
             <select id="time-slot" required>
                 <option value="">Choose a time slot</option>
                 ${tournament.slots.map(slot => `<option value="${slot}">${slot}</option>`).join('')}
             </select>
+            <label for="time-slot">Select Time Slot</label>
         </div>
     `;
     
@@ -358,7 +260,7 @@ function addTournamentForm(tournament) {
     playerNameGroup.after(tournamentForm);
 }
 
-// Enhanced payment processing with receipt generation
+// Enhanced payment processing
 function processPayment() {
     const playerName = document.getElementById('player-name').value.trim();
     const tournamentType = document.getElementById('tournament-type').value;
@@ -375,7 +277,6 @@ function processPayment() {
     }
 
     const payBtn = document.getElementById('pay-btn');
-    const downloadBtn = document.getElementById('download-btn');
     
     // Disable pay button and show loading
     payBtn.disabled = true;
@@ -387,8 +288,12 @@ function processPayment() {
         payBtn.innerHTML = '<i class="fas fa-check"></i> Payment Successful!';
         payBtn.style.background = 'var(--success-color)';
         
-        downloadBtn.disabled = false;
-        showToast('Payment successful! You can now download your receipt.', 'success');
+        showToast(`Successfully registered for ${currentTournament.name}! Tournament details sent to your profile.`, 'success');
+        
+        // Close modal after successful payment
+        setTimeout(() => {
+            closePaymentModal();
+        }, 2000);
         
         // Reset button after delay
         setTimeout(() => {
@@ -396,124 +301,6 @@ function processPayment() {
             payBtn.style.background = '';
         }, 3000);
     }, 2500);
-}
-
-// Enhanced receipt generation and storage
-function downloadReceipt() {
-    if (!currentTournament || !playerProfile) return;
-    
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    const playerName = document.getElementById('player-name').value;
-    const tournamentType = document.getElementById('tournament-type').value;
-    const timeSlot = document.getElementById('time-slot').value;
-    const receiptId = generateReceiptId();
-    const currentDate = new Date().toLocaleString();
-    const paymentMethod = document.getElementById('upi-radio').checked ? 'UPI Payment' : 'QR Code Payment';
-    
-    // Generate and save receipt data
-    const receiptData = {
-        receiptId: receiptId,
-        tournamentName: currentTournament.name,
-        playerName: playerName,
-        playerUID: playerProfile.uid,
-        amount: currentTournament.entryFee,
-        mode: tournamentType,
-        timeSlot: timeSlot,
-        date: currentDate,
-        paymentMethod: paymentMethod,
-        tournamentDate: currentTournament.date
-    };
-    
-    // Save to localStorage
-    saveReceipt(receiptData);
-    
-    // Generate PDF
-    generatePDF(doc, receiptData);
-    
-    showToast('Receipt downloaded and saved successfully!', 'success');
-}
-
-function generatePDF(doc, receiptData) {
-    // Set font
-    doc.setFont('helvetica');
-    
-    // Header with logo area
-    doc.setFontSize(22);
-    doc.setTextColor(255, 87, 34);
-    doc.text('FREE FIRE TOURNAMENT ARENA', 20, 25);
-    
-    // Subtitle
-    doc.setFontSize(14);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Tournament Registration Receipt', 20, 35);
-    
-    // Receipt header
-    doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Payment Receipt', 20, 55);
-    
-    // Receipt details in organized sections
-    doc.setFontSize(11);
-    
-    // Receipt Info Section
-    doc.setTextColor(255, 87, 34);
-    doc.text('Receipt Information', 20, 75);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Receipt ID: ${receiptData.receiptId}`, 20, 85);
-    doc.text(`Date & Time: ${receiptData.date}`, 20, 95);
-    doc.text(`Payment Method: ${receiptData.paymentMethod}`, 20, 105);
-    doc.text('Payment Status: SUCCESSFUL', 20, 115);
-    
-    // Player Info Section
-    doc.setTextColor(255, 87, 34);
-    doc.text('Player Information', 20, 135);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Player Name: ${receiptData.playerName}`, 20, 145);
-    doc.text(`Free Fire UID: ${receiptData.playerUID}`, 20, 155);
-    
-    // Tournament Info Section
-    doc.setTextColor(255, 87, 34);
-    doc.text('Tournament Details', 20, 175);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Tournament: ${receiptData.tournamentName}`, 20, 185);
-    doc.text(`Tournament Date: ${formatDate(receiptData.tournamentDate)}`, 20, 195);
-    doc.text(`Game Mode: ${receiptData.mode}`, 20, 205);
-    doc.text(`Time Slot: ${receiptData.timeSlot}`, 20, 215);
-    
-    // Payment Info Section
-    doc.setTextColor(255, 87, 34);
-    doc.text('Payment Details', 20, 235);
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(14);
-    doc.text(`Entry Fee: ₹${receiptData.amount}`, 20, 245);
-    
-    // Footer
-    doc.setFontSize(9);
-    doc.setTextColor(128, 128, 128);
-    doc.text('This is a computer generated receipt. Please keep it for your records.', 20, 270);
-    doc.text('For support contact: support@ffarena.com | +91 9876543210', 20, 280);
-    doc.text('Free Fire Tournament Arena - Your Gateway to Victory!', 20, 290);
-    
-    // Save the PDF
-    doc.save(`FreeFire_Tournament_Receipt_${receiptData.receiptId}.pdf`);
-}
-
-function downloadStoredReceipt(receiptId) {
-    const receipts = getStoredReceipts();
-    const receipt = receipts.find(r => r.receiptId === receiptId);
-    
-    if (!receipt) {
-        showToast('Receipt not found!', 'error');
-        return;
-    }
-    
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    generatePDF(doc, receipt);
-    showToast('Receipt downloaded successfully!', 'success');
 }
 
 // Event Listeners Setup
@@ -573,9 +360,7 @@ function setupEventListeners() {
 
     // Payment processing
     const payBtn = document.getElementById('pay-btn');
-    const downloadBtn = document.getElementById('download-btn');
     if (payBtn) payBtn.addEventListener('click', processPayment);
-    if (downloadBtn) downloadBtn.addEventListener('click', downloadReceipt);
 
     // Toast close
     const toastClose = document.getElementById('toast-close');
@@ -699,12 +484,6 @@ function formatDate(dateString) {
     });
 }
 
-function generateReceiptId() {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000);
-    return `FF${timestamp}${random}`.substr(-10);
-}
-
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
@@ -813,69 +592,39 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Add loading animation for images
+// Focus accessibility with morph theme styling
 document.addEventListener('DOMContentLoaded', function() {
-    const images = document.querySelectorAll('img');
-    images.forEach(img => {
-        if (!img.complete) {
-            img.style.opacity = '0';
-            img.addEventListener('load', function() {
-                this.style.transition = 'opacity 0.3s ease';
-                this.style.opacity = '1';
-            });
+    // Add focus styles for accessibility
+    const style = document.createElement('style');
+    style.textContent = `
+        *:focus {
+            outline: 3px solid var(--primary-color);
+            outline-offset: 2px;
+            border-radius: var(--morph-radius);
         }
-    });
+        
+        button:focus,
+        input:focus,
+        select:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+    `;
+    document.head.appendChild(style);
 });
 
-// Intersection Observer for scroll animations
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver(function(entries) {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
-    });
-}, observerOptions);
-
-// Observe tournament cards for animation
+// Enhanced smooth page transitions
 document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        document.querySelectorAll('.tournament-card, .step, .receipt-card').forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(card);
-        });
-    }, 100);
-});
-
-// Auto-save form data (for better UX)
-function autoSaveFormData() {
-    const playerNameInput = document.getElementById('player-name');
-    if (playerNameInput && playerProfile) {
-        playerNameInput.value = playerProfile.name;
-    }
-}
-
-// Initialize auto-save when payment modal opens
-document.addEventListener('DOMContentLoaded', function() {
-    const paymentModalObserver = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.target.classList.contains('open')) {
-                autoSaveFormData();
-            }
-        });
+    // Stagger section animations on page load
+    const sections = document.querySelectorAll('section');
+    sections.forEach((section, index) => {
+        section.style.opacity = '0';
+        section.style.transform = 'translateY(30px)';
+        section.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        
+        setTimeout(() => {
+            section.style.opacity = '1';
+            section.style.transform = 'translateY(0)';
+        }, 300 + (index * 200));
     });
-    
-    if (paymentModal) {
-        paymentModalObserver.observe(paymentModal, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-    }
 });
