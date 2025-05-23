@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fire Tournament Arena</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-fire"></i>
+                <span>FF Arena</span>
+            </div>
+            <ul class="nav-menu" id="nav-menu">
+                <li class="nav-item">
+                    <a href="#home" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#tournaments" class="nav-link">Tournaments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#how-to-join" class="nav-link">How to Join</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#contact" class="nav-link">Contact</a>
+                </li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Free Fire Tournament Arena</h1>
+            <p class="hero-subtitle">Join the ultimate battle royale experience and compete for amazing prizes</p>
+            <button class="hero-btn" onclick="scrollToSection('tournaments')">
+                <i class="fas fa-trophy"></i>
+                View Tournaments
+            </button>
+        </div>
+        <div class="hero-overlay"></div>
+    </section>
+
+    <!-- Tournament Controls -->
+    <section id="tournaments" class="tournaments-section">
+        <div class="container">
+            <h2 class="section-title">Active Tournaments</h2>
+            
+            <!-- Search and Filter Controls -->
+            <div class="tournament-controls">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search tournaments..." class="search-input">
+                </div>
+                <div class="filter-container">
+                    <select id="sort-select" class="sort-select">
+                        <option value="date">Sort by Date</option>
+                        <option value="fee">Sort by Entry Fee</option>
+                        <option value="prize">Sort by Prize</option>
+                        <option value="name">Sort by Name</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tournament Grid -->
+            <main id="tournament-list" class="tournament-grid">
+                <!-- Tournament cards will be dynamically generated here -->
+            </main>
+        </div>
+    </section>
+
+    <!-- How to Join Section -->
+    <section id="how-to-join" class="how-to-join">
+        <div class="container">
+            <h2 class="section-title">How to Join</h2>
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3>Register</h3>
+                    <p>Choose your tournament and click the Join button</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h3>Pay Entry Fee</h3>
+                    <p>Complete payment via UPI or scan QR code</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <h3>Play & Win</h3>
+                    <p>Join the tournament and compete for prizes</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">Contact Us</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>info@ffarena.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>+91 9876543210</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Mumbai, India</span>
+                    </div>
+                </div>
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-discord"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Free Fire Tournament Arena. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Join Tournament</h3>
+                <span class="close-btn" id="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="tournament-info">
+                    <p id="modal-fee" class="fee-display">Fee: ₹0</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="player-name">Player Name:</label>
+                    <input type="text" id="player-name" placeholder="Enter your in-game name" required>
+                </div>
+
+                <div class="payment-options">
+                    <h4>Payment Method:</h4>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="payment-method" id="upi-radio" value="upi" checked>
+                            <span class="radio-custom"></span>
+                            Pay via UPI ID
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="payment-method" id="qr-radio" value="qr">
+                            <span class="radio-custom"></span>
+                            Show QR Code
+                        </label>
+                    </div>
+                </div>
+
+                <div id="upi-section" class="payment-section">
+                    <div class="form-group">
+                        <label for="upi-id">UPI ID:</label>
+                        <input type="text" id="upi-id" placeholder="yourname@upi" value="tournament@paytm">
+                    </div>
+                </div>
+
+                <div id="qr-section" class="payment-section hidden">
+                    <div class="qr-container">
+                        <img id="qr-image" src="assets/qr-resources/qr.png" alt="QR Code for Payment" class="qr-code">
+                        <p class="qr-text">Scan this QR code to make payment</p>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="pay-btn" class="pay-btn">
+                        <i class="fas fa-credit-card"></i>
+                        Process Payment
+                    </button>
+                    <button id="download-btn" class="download-btn" disabled>
+                        <i class="fas fa-download"></i>
+                        Download Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="toast-content">
+            <span id="toast-message"></span>
+            <button id="toast-close" class="toast-close">&times;</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
