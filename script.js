@@ -722,16 +722,46 @@ function setupNavigation() {
         });
     }
 
-    // Navbar scroll effect
+    // Enhanced navbar scroll effect with smooth animations
     window.addEventListener('scroll', function() {
         const navbar = document.getElementById('navbar');
         if (navbar) {
-            if (window.scrollY > 100) {
-                navbar.style.background = 'hsla(var(--background-darker), 0.98)';
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
             } else {
-                navbar.style.background = 'hsla(var(--background-darker), 0.95)';
+                navbar.classList.remove('scrolled');
             }
         }
+    });
+    
+    // Add active state to current navigation link
+    updateActiveNavLink();
+}
+
+/**
+ * Update active navigation link based on scroll position
+ */
+function updateActiveNavLink() {
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    window.addEventListener('scroll', function() {
+        let current = '';
+        
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.clientHeight;
+            if (window.scrollY >= (sectionTop - 200)) {
+                current = section.getAttribute('id');
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${current}`) {
+                link.classList.add('active');
+            }
+        });
     });
 }
 
