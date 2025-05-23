@@ -25,12 +25,26 @@
                     <a href="#tournaments" class="nav-link">Tournaments</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#how-to-join" class="nav-link">How to Join</a>
+                    <a href="receipts.html" class="nav-link">My Receipts</a>
                 </li>
                 <li class="nav-item">
                     <a href="#contact" class="nav-link">Contact</a>
                 </li>
             </ul>
+            <div class="nav-controls">
+                <!-- User Welcome Message -->
+                <div id="user-welcome" class="user-welcome hidden">
+                    <span id="welcome-message">Welcome back!</span>
+                </div>
+                <!-- Theme Toggle -->
+                <div class="theme-toggle">
+                    <input type="checkbox" id="theme-switch" class="theme-switch">
+                    <label for="theme-switch" class="theme-label">
+                        <i class="fas fa-sun"></i>
+                        <i class="fas fa-moon"></i>
+                    </label>
+                </div>
+            </div>
             <div class="hamburger" id="hamburger">
                 <span class="bar"></span>
                 <span class="bar"></span>
@@ -188,7 +202,7 @@
 
                 <div id="qr-section" class="payment-section hidden">
                     <div class="qr-container">
-                        <img id="qr-image" src="assets/qr-resources/qr.png" alt="QR Code for Payment" class="qr-code">
+                        <img id="qr-image" src="assets/qr-resources/qr.svg" alt="QR Code for Payment" class="qr-code">
                         <p class="qr-text">Scan this QR code to make payment</p>
                     </div>
                 </div>
@@ -201,6 +215,38 @@
                     <button id="download-btn" class="download-btn" disabled>
                         <i class="fas fa-download"></i>
                         Download Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Profile Setup Modal -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Welcome to FF Arena!</h3>
+                <div class="profile-icon">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p class="profile-intro">Set up your player profile to get started with tournaments:</p>
+                
+                <div class="form-group">
+                    <label for="profile-name">In-game Name:</label>
+                    <input type="text" id="profile-name" placeholder="Enter your Free Fire nickname" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="profile-uid">Free Fire UID:</label>
+                    <input type="text" id="profile-uid" placeholder="Enter your Free Fire UID" required>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="save-profile-btn" class="pay-btn">
+                        <i class="fas fa-save"></i>
+                        Save Profile
                     </button>
                 </div>
             </div>

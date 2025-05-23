@@ -1,0 +1,60 @@
+I want to build a lightweight Free Fire Tournament website using only HTML, CSS, and JavaScript (no backend). Please generate the code and folder structure for me. The features should include:
+
+1. **Player Profile & LocalStorage “Login”**  
+   - On first visit, show a modal or form asking for:
+     • In-game Name  
+     • Free Fire UID  
+   - Store these in `localStorage`.  
+   - On subsequent visits, auto-populate forms and display a greeting like “Welcome back, {In-game Name}!” at the top.
+
+2. **Light/Dark Theme Toggle**  
+   - Add a toggle switch in the header/footer that flips CSS variables for colors.  
+   - Persist the choice in `localStorage` so it “remembers” on reload.
+
+3. **Tournament Join Form**  
+   - Fields:
+     • Player Name (pre-filled from localStorage)  
+     • Free Fire UID (pre-filled)  
+     • Select Tournament Type (Solo/Duo/Squad)  
+     • Select Slot Time (dropdown)  
+   - A “Pay Entry Fee” button at the bottom.
+
+4. **UPI/QR Code Payment Popup**  
+   - When “Pay Entry Fee” is clicked:
+     • Open a modal showing:
+       – UPI ID text  
+       – A generated QR code (use a small JS library)  
+     • A “I’ve Paid” button.
+
+5. **Downloadable PDF Receipt**  
+   - After clicking “I’ve Paid”:
+     • Use jsPDF (or similar) to generate a one-page receipt containing:
+       – Tournament Name & Date  
+       – Player In-game Name & UID  
+       – Amount Paid  
+       – Transaction ID placeholder (randomly generated)  
+     • Trigger a PDF download named `receipt_{UID}.pdf`.  
+     • Store the receipt data in `localStorage` under a “receipts” array.
+
+6. **Real-Time Countdown Timer**  
+   - On the tournament lobby page, display a countdown to match start (use `setInterval`).  
+   - When it reaches zero:
+     • Disable all join/payment buttons.  
+     • Show “Match In Progress.”
+
+7. **“My Receipts” Section**  
+   - On a separate page or section, read the `localStorage` “receipts” array and list each receipt with:
+     • Date  
+     • Amount  
+     • A “Download Again” link for each past PDF.
+
+8. **Responsive Design**  
+   - Use CSS Grid/Flexbox to ensure layouts adapt to mobile and desktop.
+
+9. **Folder Structure**  
+   - `/index.html` – Landing + Join Form + Lobby  
+   - `/receipts.html` – My Receipts list  
+   - `/css/styles.css` – All styling + theme variables  
+   - `/js/app.js` – LocalStorage login, theme toggle, form logic, countdown  
+   - `/js/payment.js` – QR code generator, jsPDF receipt logic  
+   - `/assets/` – Images, logos
