@@ -1,5 +1,10 @@
 /* CSS Variables */
 :root {
+    /* Fonts */
+    --font-heading: 'Poppins', sans-serif;
+    --font-body: 'Merriweather', serif;
+    
+    /* Colors */
     --primary-color: #FF5722;
     --secondary-color: #FF8A65;
     --accent-color: #FFC107;
@@ -13,17 +18,31 @@
     --warning-color: #FF9800;
     --border-color: 220 13% 30%; /* #484C56 */
     --shadow-color: 220 13% 8%; /* #141518 */
+    
+    /* Gradients */
+    --gradient-bg: linear-gradient(135deg, rgba(255, 87, 34, 0.1), rgba(255, 193, 7, 0.05));
+    --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    --gradient-accent: linear-gradient(135deg, var(--accent-color), #FFD54F);
+    
+    /* Morphing Variables */
+    --morph-radius: 1.5rem;
+    --morph-radius-lg: 2rem;
+    --morph-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --morph-hover-scale: 1.02;
+    --morph-press-scale: 0.98;
 }
 
 /* Light Theme Variables */
 [data-theme="light"] {
-    --background-dark: 0 0% 95%; /* #F2F2F2 */
-    --background-darker: 0 0% 98%; /* #FAFAFA */
+    --background-dark: 0 0% 97%; /* #F7F7F7 */
+    --background-darker: 0 0% 100%; /* #FFFFFF */
     --surface-color: 0 0% 100%; /* #FFFFFF */
-    --text-primary: 0 0% 13%; /* #212121 */
-    --text-secondary: 0 0% 38%; /* #616161 */
-    --border-color: 0 0% 87%; /* #DEDEDE */
+    --text-primary: 0 0% 15%; /* #262626 */
+    --text-secondary: 0 0% 45%; /* #737373 */
+    --border-color: 0 0% 90%; /* #E6E6E6 */
     --shadow-color: 0 0% 0%; /* #000000 */
+    
+    --gradient-bg: linear-gradient(135deg, rgba(255, 87, 34, 0.05), rgba(255, 193, 7, 0.02));
 }
 
 /* Global Styles */
@@ -39,11 +58,21 @@ html {
 }
 
 body {
-    font-family: 'Rajdhani', sans-serif;
-    background-color: hsl(var(--background-dark));
+    font-family: var(--font-body);
+    background: hsl(var(--background-dark));
+    background-image: var(--gradient-bg);
     color: hsl(var(--text-primary));
-    line-height: 1.6;
+    line-height: 1.7;
     overflow-x: hidden;
+    transition: var(--morph-transition);
+    opacity: 0;
+    animation: pageLoad 0.8s ease-out forwards;
+}
+
+@keyframes pageLoad {
+    to {
+        opacity: 1;
+    }
 }
 
 .container {
@@ -54,19 +83,33 @@ body {
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Orbitron', monospace;
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-weight: 600;
     margin-bottom: 1rem;
+    letter-spacing: -0.02em;
 }
 
 .section-title {
+    font-family: var(--font-heading);
     font-size: 2.5rem;
+    font-weight: 700;
     text-align: center;
     margin-bottom: 3rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    letter-spacing: -0.03em;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: sectionFadeIn 0.8s ease-out 0.2s forwards;
+}
+
+@keyframes sectionFadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Navigation */
@@ -93,10 +136,11 @@ h1, h2, h3, h4, h5, h6 {
 .nav-logo {
     display: flex;
     align-items: center;
-    font-family: 'Orbitron', monospace;
+    font-family: var(--font-heading);
     font-size: 1.5rem;
-    font-weight: 900;
+    font-weight: 800;
     color: var(--primary-color);
+    letter-spacing: -0.02em;
 }
 
 .nav-logo i {
@@ -144,11 +188,22 @@ h1, h2, h3, h4, h5, h6 {
     height: 30px;
     background: hsl(var(--surface-color));
     border: 2px solid hsl(var(--border-color));
-    border-radius: 50px;
+    border-radius: var(--morph-radius);
     cursor: pointer;
     position: relative;
-    transition: all 0.3s ease;
+    transition: var(--morph-transition);
     padding: 0 5px;
+    box-shadow: 0 4px 12px hsla(var(--shadow-color), 0.1);
+    overflow: hidden;
+}
+
+.theme-label:hover {
+    transform: scale(var(--morph-hover-scale));
+    box-shadow: 0 6px 20px hsla(var(--shadow-color), 0.15);
+}
+
+.theme-label:active {
+    transform: scale(var(--morph-press-scale));
 }
 
 .theme-label i {
