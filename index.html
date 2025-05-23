@@ -36,6 +36,11 @@
                 <div id="user-welcome" class="user-welcome hidden">
                     <span id="welcome-message">Welcome back!</span>
                 </div>
+                <!-- Admin Button -->
+                <button id="admin-btn" class="admin-btn" title="Admin Panel">
+                    <i class="fas fa-cog"></i>
+                </button>
+                
                 <!-- Theme Toggle -->
                 <div class="theme-toggle">
                     <input type="checkbox" id="theme-switch" class="theme-switch">
@@ -249,11 +254,59 @@
         </div>
     </div>
 
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="admin-panel hidden">
+        <div class="admin-panel-content">
+            <div class="admin-panel-header">
+                <h3><i class="fas fa-shield-alt"></i> Admin Control Panel</h3>
+                <button id="close-admin-panel" class="close-btn">&times;</button>
+            </div>
+            <div class="admin-panel-body">
+                <div class="admin-section">
+                    <h4><i class="fas fa-dollar-sign"></i> Fee Settings</h4>
+                    <div class="admin-setting">
+                        <label>Current Entry Fee: <span id="current-fee">₹50</span></label>
+                        <div class="form-group">
+                            <input type="number" id="admin-fee" min="1" placeholder="Enter new fee">
+                            <label for="admin-fee">New Entry Fee (₹)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="admin-section">
+                    <h4><i class="fas fa-mobile-alt"></i> UPI Settings</h4>
+                    <div class="admin-setting">
+                        <label>Current UPI ID: <span id="current-upi">tournament@paytm</span></label>
+                        <div class="form-group">
+                            <input type="text" id="admin-upi" placeholder="Enter new UPI ID">
+                            <label for="admin-upi">New UPI ID</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="admin-actions">
+                    <button id="save-settings" class="save-settings-btn">
+                        <i class="fas fa-save"></i>
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast">
         <div class="toast-content">
             <span id="toast-message"></span>
             <button id="toast-close" class="toast-close">&times;</button>
+        </div>
+    </div>
+
+    <!-- Admin Confirmation Toast -->
+    <div id="admin-toast" class="admin-toast">
+        <div class="admin-toast-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="admin-toast-message">Settings saved successfully!</span>
         </div>
     </div>
 

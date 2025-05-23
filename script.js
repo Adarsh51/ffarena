@@ -87,6 +87,7 @@ const themeSwitch = document.getElementById('theme-switch');
 document.addEventListener('DOMContentLoaded', function() {
     loadPlayerProfile();
     loadTheme();
+    loadAdminSettings(); // Load admin settings from localStorage
     checkFirstVisit();
     renderTournaments();
     startCountdowns();
@@ -146,6 +147,206 @@ function toggleTheme() {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('ffArenaTheme', newTheme);
+}
+
+// Admin Panel Management
+const ADMIN_PASSWORD = "Admin123!"; // Hard-coded admin password
+let currentEntryFee = 50; // Default entry fee
+let currentUpiId = "tournament@paytm"; // Default UPI ID
+
+/**
+ * Load admin settings from localStorage on page load
+ * Reads stored entry fee and UPI ID, updates UI accordingly
+ */
+function loadAdminSettings() {
+    // Load entry fee from localStorage or use default
+    const storedFee = localStorage.getItem("entryFee");
+    if (storedFee) {
+        currentEntryFee = parseInt(storedFee);
+    }
+    
+    // Load UPI ID from localStorage or use default
+    const storedUpi = localStorage.getItem("upiID");
+    if (storedUpi) {
+        currentUpiId = storedUpi;
+    }
+    
+    // Update UI elements with current settings
+    updateAdminSettingsDisplay();
+    updatePaymentUI();
+}
+
+/**
+ * Update the admin panel display with current settings
+ */
+function updateAdminSettingsDisplay() {
+    const currentFeeEl = document.getElementById('current-fee');
+    const currentUpiEl = document.getElementById('current-upi');
+    
+    if (currentFeeEl) {
+        currentFeeEl.textContent = `₹${currentEntryFee}`;
+    }
+    
+    if (currentUpiEl) {
+        currentUpiEl.textContent = currentUpiId;
+    }
+}
+
+/**
+ * Update payment UI throughout the application with new settings
+ */
+function updatePaymentUI() {
+    // Update all tournament cards with new entry fee
+    const tournamentCards = document.querySelectorAll('.tournament-card');
+    tournamentCards.forEach(card => {
+        const feeElement = card.querySelector('.entry-fee');
+        if (feeElement) {
+            feeElement.innerHTML = `<strong>Entry Fee:</strong> ₹${currentEntryFee}`;
+        }
+    });
+    
+    // Update payment modal if open
+    const modalFee = document.getElementById('modal-fee');
+    if (modalFee && currentTournament) {
+        modalFee.textContent = `Entry Fee: ₹${currentEntryFee}`;
+    }
+    
+    // Update UPI ID in payment form
+    const upiIdInput = document.getElementById('upi-id');
+    if (upiIdInput) {
+        upiIdInput.value = currentUpiId;
+    }
+}
+
+/**
+ * Handle admin button click - prompt for password and show panel
+ */
+function handleAdminAccess() {
+    const enteredPassword = prompt("Enter admin password:");
+    
+    if (enteredPassword === ADMIN_PASSWORD) {
+        // Access granted - show admin panel
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel) {
+            adminPanel.classList.remove('hidden');
+            adminPanel.classList.add('visible');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        
+        // Update the panel with current settings
+        updateAdminSettingsDisplay();
+    } else if (enteredPassword !== null) {
+        // Access denied (only if user didn't cancel)
+        alert("Access denied. Incorrect password.");
+    }
+}
+
+/**
+ * Close the admin panel
+ */
+function closeAdminPanel() {
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel) {
+        adminPanel.classList.remove('visible');
+        adminPanel.classList.add('hidden');
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+}
+
+/**
+ * Save admin settings to localStorage and update UI
+ */
+function saveAdminSettings() {
+    const adminFeeInput = document.getElementById('admin-fee');
+    const adminUpiInput = document.getElementById('admin-upi');
+    
+    let newFee = null;
+    let newUpi = null;
+    let hasChanges = false;
+    
+    // Validate and process entry fee
+    if (adminFeeInput && adminFeeInput.value.trim()) {
+        const feeValue = parseInt(adminFeeInput.value);
+        if (feeValue && feeValue > 0) {
+            newFee = feeValue;
+            hasChanges = true;
+        } else {
+            alert("Please enter a valid entry fee (must be greater than 0)");
+            return;
+        }
+    }
+    
+    // Validate and process UPI ID
+    if (adminUpiInput && adminUpiInput.value.trim()) {
+        const upiValue = adminUpiInput.value.trim();
+        if (upiValue.length > 0) {
+            newUpi = upiValue;
+            hasChanges = true;
+        } else {
+            alert("Please enter a valid UPI ID");
+            return;
+        }
+    }
+    
+    if (!hasChanges) {
+        alert("Please enter at least one setting to update");
+        return;
+    }
+    
+    // Save to localStorage and update current values
+    if (newFee) {
+        localStorage.setItem("entryFee", newFee.toString());
+        currentEntryFee = newFee;
+    }
+    
+    if (newUpi) {
+        localStorage.setItem("upiID", newUpi);
+        currentUpiId = newUpi;
+    }
+    
+    // Update UI elements
+    updateAdminSettingsDisplay();
+    updatePaymentUI();
+    
+    // Clear input fields
+    if (adminFeeInput) adminFeeInput.value = '';
+    if (adminUpiInput) adminUpiInput.value = '';
+    
+    // Show success toast
+    showAdminToast("Settings saved successfully!");
+    
+    // Auto-close panel after 2 seconds
+    setTimeout(() => {
+        closeAdminPanel();
+    }, 2000);
+}
+
+/**
+ * Show admin confirmation toast with morph-style animation
+ */
+function showAdminToast(message) {
+    const adminToast = document.getElementById('admin-toast');
+    const adminToastMessage = document.getElementById('admin-toast-message');
+    
+    if (adminToast && adminToastMessage) {
+        adminToastMessage.textContent = message;
+        adminToast.classList.add('show');
+        
+        // Auto hide after 3 seconds
+        setTimeout(() => {
+            hideAdminToast();
+        }, 3000);
+    }
+}
+
+/**
+ * Hide admin toast
+ */
+function hideAdminToast() {
+    const adminToast = document.getElementById('admin-toast');
+    if (adminToast) {
+        adminToast.classList.remove('show');
+    }
 }
 
 // Enhanced Tournament Rendering
@@ -312,6 +513,43 @@ function setupEventListeners() {
     if (themeSwitch) {
         themeSwitch.addEventListener('change', toggleTheme);
     }
+    
+    // Admin panel event listeners
+    const adminBtn = document.getElementById('admin-btn');
+    const closeAdminBtn = document.getElementById('close-admin-panel');
+    const saveSettingsBtn = document.getElementById('save-settings');
+    const adminPanel = document.getElementById('admin-panel');
+    
+    // Admin button click - trigger password prompt and panel toggle
+    if (adminBtn) {
+        adminBtn.addEventListener('click', handleAdminAccess);
+    }
+    
+    // Close admin panel button
+    if (closeAdminBtn) {
+        closeAdminBtn.addEventListener('click', closeAdminPanel);
+    }
+    
+    // Save settings button
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', saveAdminSettings);
+    }
+    
+    // Close panel when clicking outside it
+    if (adminPanel) {
+        document.addEventListener('click', function(e) {
+            if (e.target === adminPanel) {
+                closeAdminPanel();
+            }
+        });
+    }
+    
+    // Close panel on Escape key press
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && adminPanel && adminPanel.classList.contains('visible')) {
+            closeAdminPanel();
+        }
+    });
     
     // Profile modal events
     const saveProfileBtn = document.getElementById('save-profile-btn');

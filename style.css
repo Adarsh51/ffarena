@@ -171,6 +171,49 @@ h1, h2, h3, h4, h5, h6 {
     display: none;
 }
 
+/* Admin Button */
+.admin-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: var(--morph-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.admin-btn:hover::before {
+    left: 100%;
+}
+
+.admin-btn:hover {
+    transform: scale(var(--morph-hover-scale)) rotate(90deg);
+    box-shadow: 0 6px 20px rgba(255, 87, 34, 0.4);
+}
+
+.admin-btn:active {
+    transform: scale(var(--morph-press-scale)) rotate(90deg);
+}
+
 /* Theme Toggle */
 .theme-toggle {
     position: relative;
@@ -1248,6 +1291,214 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 4px;
     font-size: 0.8rem;
     color: var(--primary-color);
+}
+
+/* Admin Panel Styles */
+.admin-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background: hsl(var(--background-darker));
+    border-left: 1px solid hsl(var(--border-color));
+    box-shadow: -10px 0 30px hsla(var(--shadow-color), 0.3);
+    z-index: 2500;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: var(--morph-transition);
+    overflow-y: auto;
+}
+
+.admin-panel.visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.admin-panel-content {
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-panel-header {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px hsla(var(--shadow-color), 0.2);
+}
+
+.admin-panel-header h3 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-panel-header .close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: var(--morph-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-panel-header .close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.admin-panel-body {
+    flex: 1;
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+}
+
+.admin-section {
+    margin-bottom: 2.5rem;
+    background: hsl(var(--surface-color));
+    border-radius: var(--morph-radius-lg);
+    padding: 1.5rem;
+    border: 1px solid hsl(var(--border-color));
+    box-shadow: 0 4px 12px hsla(var(--shadow-color), 0.05);
+    transition: var(--morph-transition);
+}
+
+.admin-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px hsla(var(--shadow-color), 0.1);
+}
+
+.admin-section h4 {
+    color: var(--primary-color);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-setting {
+    margin-bottom: 1rem;
+}
+
+.admin-setting > label {
+    display: block;
+    color: hsl(var(--text-secondary));
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-heading);
+    font-weight: 500;
+}
+
+.admin-setting span {
+    color: var(--accent-color);
+    font-weight: 600;
+    background: hsla(var(--accent-color), 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.admin-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid hsl(var(--border-color));
+}
+
+.save-settings-btn {
+    width: 100%;
+    padding: 16px 24px;
+    background: var(--gradient-accent);
+    color: hsl(var(--background-darker));
+    border: none;
+    border-radius: var(--morph-radius);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--morph-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 6px 16px rgba(255, 193, 7, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.save-settings-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.save-settings-btn:hover::before {
+    left: 100%;
+}
+
+.save-settings-btn:hover {
+    transform: translateY(-3px) scale(var(--morph-hover-scale));
+    box-shadow: 0 10px 24px rgba(255, 193, 7, 0.4);
+}
+
+.save-settings-btn:active {
+    transform: translateY(-1px) scale(var(--morph-press-scale));
+}
+
+/* Admin Toast Styles */
+.admin-toast {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    background: var(--gradient-accent);
+    color: hsl(var(--background-darker));
+    padding: 1rem 1.5rem;
+    border-radius: var(--morph-radius);
+    box-shadow: 0 12px 32px rgba(255, 193, 7, 0.4);
+    z-index: 3500;
+    transform: translateX(400px) scale(0.8);
+    opacity: 0;
+    transition: var(--morph-transition);
+}
+
+.admin-toast.show {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+}
+
+.admin-toast-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.admin-toast-content i {
+    font-size: 1.2rem;
 }
 
 /* Utility Classes */
