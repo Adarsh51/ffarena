@@ -157,7 +157,8 @@ h1, h2, h3, h4, h5, h6 {
 .nav-controls {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 /* User Welcome Message */
@@ -1414,6 +1415,20 @@ h1, h2, h3, h4, h5, h6 {
     padding: 2px 8px;
     border-radius: 4px;
     font-family: monospace;
+}
+
+.current-fee-display {
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: hsla(var(--primary-color), 0.1);
+    border-radius: var(--morph-radius);
+    border-left: 3px solid var(--primary-color);
+}
+
+.current-fee-display label {
+    margin: 0;
+    font-weight: 500;
+    color: hsl(var(--text-primary));
 }
 
 .admin-actions {

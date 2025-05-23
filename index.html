@@ -263,9 +263,17 @@
             </div>
             <div class="admin-panel-body">
                 <div class="admin-section">
-                    <h4><i class="fas fa-dollar-sign"></i> Fee Settings</h4>
+                    <h4><i class="fas fa-dollar-sign"></i> Tournament Fee Settings</h4>
                     <div class="admin-setting">
-                        <label>Current Entry Fee: <span id="current-fee">₹50</span></label>
+                        <div class="form-group">
+                            <select id="tournament-select" required>
+                                <option value="">Select Tournament</option>
+                            </select>
+                            <label for="tournament-select">Choose Tournament</label>
+                        </div>
+                        <div class="current-fee-display">
+                            <label>Current Fee: <span id="selected-tournament-fee">Select a tournament</span></label>
+                        </div>
                         <div class="form-group">
                             <input type="number" id="admin-fee" min="1" placeholder="Enter new fee">
                             <label for="admin-fee">New Entry Fee (₹)</label>

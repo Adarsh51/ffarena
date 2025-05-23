@@ -151,19 +151,21 @@ function toggleTheme() {
 
 // Admin Panel Management
 const ADMIN_PASSWORD = "Admin123!"; // Hard-coded admin password
-let currentEntryFee = 50; // Default entry fee
 let currentUpiId = "tournament@paytm"; // Default UPI ID
+let selectedTournamentId = null; // Currently selected tournament for fee editing
 
 /**
  * Load admin settings from localStorage on page load
- * Reads stored entry fee and UPI ID, updates UI accordingly
+ * Reads stored tournament fees and UPI ID, updates UI accordingly
  */
 function loadAdminSettings() {
-    // Load entry fee from localStorage or use default
-    const storedFee = localStorage.getItem("entryFee");
-    if (storedFee) {
-        currentEntryFee = parseInt(storedFee);
-    }
+    // Load individual tournament fees from localStorage
+    tournaments.forEach(tournament => {
+        const storedFee = localStorage.getItem(`tournament_${tournament.id}_fee`);
+        if (storedFee) {
+            tournament.entryFee = parseInt(storedFee);
+        }
+    });
     
     // Load UPI ID from localStorage or use default
     const storedUpi = localStorage.getItem("upiID");
@@ -180,15 +182,53 @@ function loadAdminSettings() {
  * Update the admin panel display with current settings
  */
 function updateAdminSettingsDisplay() {
-    const currentFeeEl = document.getElementById('current-fee');
+    // Populate tournament dropdown
+    populateTournamentDropdown();
+    
+    // Update UPI display
     const currentUpiEl = document.getElementById('current-upi');
-    
-    if (currentFeeEl) {
-        currentFeeEl.textContent = `₹${currentEntryFee}`;
-    }
-    
     if (currentUpiEl) {
         currentUpiEl.textContent = currentUpiId;
+    }
+}
+
+/**
+ * Populate the tournament dropdown in admin panel
+ */
+function populateTournamentDropdown() {
+    const tournamentSelect = document.getElementById('tournament-select');
+    if (!tournamentSelect) return;
+    
+    // Clear existing options except the first one
+    tournamentSelect.innerHTML = '<option value="">Select Tournament</option>';
+    
+    // Add tournament options
+    tournaments.forEach(tournament => {
+        const option = document.createElement('option');
+        option.value = tournament.id;
+        option.textContent = `${tournament.name} (Current: ₹${tournament.entryFee})`;
+        tournamentSelect.appendChild(option);
+    });
+}
+
+/**
+ * Handle tournament selection change in admin panel
+ */
+function handleTournamentSelection() {
+    const tournamentSelect = document.getElementById('tournament-select');
+    const selectedTournamentFeeEl = document.getElementById('selected-tournament-fee');
+    
+    if (!tournamentSelect || !selectedTournamentFeeEl) return;
+    
+    selectedTournamentId = tournamentSelect.value ? parseInt(tournamentSelect.value) : null;
+    
+    if (selectedTournamentId) {
+        const tournament = tournaments.find(t => t.id === selectedTournamentId);
+        if (tournament) {
+            selectedTournamentFeeEl.textContent = `₹${tournament.entryFee}`;
+        }
+    } else {
+        selectedTournamentFeeEl.textContent = "Select a tournament";
     }
 }
 
@@ -196,19 +236,10 @@ function updateAdminSettingsDisplay() {
  * Update payment UI throughout the application with new settings
  */
 function updatePaymentUI() {
-    // Update all tournament cards with new entry fee
-    const tournamentCards = document.querySelectorAll('.tournament-card');
-    tournamentCards.forEach(card => {
-        const feeElement = card.querySelector('.entry-fee');
-        if (feeElement) {
-            feeElement.innerHTML = `<strong>Entry Fee:</strong> ₹${currentEntryFee}`;
-        }
-    });
-    
     // Update payment modal if open
     const modalFee = document.getElementById('modal-fee');
     if (modalFee && currentTournament) {
-        modalFee.textContent = `Entry Fee: ₹${currentEntryFee}`;
+        modalFee.textContent = `Entry Fee: ₹${currentTournament.entryFee}`;
     }
     
     // Update UPI ID in payment form
@@ -264,8 +295,13 @@ function saveAdminSettings() {
     let newUpi = null;
     let hasChanges = false;
     
-    // Validate and process entry fee
+    // Validate and process tournament fee
     if (adminFeeInput && adminFeeInput.value.trim()) {
+        if (!selectedTournamentId) {
+            alert("Please select a tournament first");
+            return;
+        }
+        
         const feeValue = parseInt(adminFeeInput.value);
         if (feeValue && feeValue > 0) {
             newFee = feeValue;
@@ -294,9 +330,18 @@ function saveAdminSettings() {
     }
     
     // Save to localStorage and update current values
-    if (newFee) {
-        localStorage.setItem("entryFee", newFee.toString());
-        currentEntryFee = newFee;
+    if (newFee && selectedTournamentId) {
+        // Save individual tournament fee
+        localStorage.setItem(`tournament_${selectedTournamentId}_fee`, newFee.toString());
+        
+        // Update tournament data
+        const tournament = tournaments.find(t => t.id === selectedTournamentId);
+        if (tournament) {
+            tournament.entryFee = newFee;
+        }
+        
+        // Re-render tournaments with updated fees
+        renderTournaments();
     }
     
     if (newUpi) {
@@ -312,8 +357,18 @@ function saveAdminSettings() {
     if (adminFeeInput) adminFeeInput.value = '';
     if (adminUpiInput) adminUpiInput.value = '';
     
+    // Reset tournament selection
+    const tournamentSelect = document.getElementById('tournament-select');
+    if (tournamentSelect) tournamentSelect.value = '';
+    selectedTournamentId = null;
+    const selectedTournamentFeeEl = document.getElementById('selected-tournament-fee');
+    if (selectedTournamentFeeEl) selectedTournamentFeeEl.textContent = "Select a tournament";
+    
     // Show success toast
-    showAdminToast("Settings saved successfully!");
+    const updatedItems = [];
+    if (newFee) updatedItems.push("tournament fee");
+    if (newUpi) updatedItems.push("UPI ID");
+    showAdminToast(`Updated ${updatedItems.join(" and ")} successfully!`);
     
     // Auto-close panel after 2 seconds
     setTimeout(() => {
@@ -533,6 +588,12 @@ function setupEventListeners() {
     // Save settings button
     if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener('click', saveAdminSettings);
+    }
+    
+    // Tournament selection dropdown
+    const tournamentSelect = document.getElementById('tournament-select');
+    if (tournamentSelect) {
+        tournamentSelect.addEventListener('change', handleTournamentSelection);
     }
     
     // Close panel when clicking outside it
