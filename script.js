@@ -733,22 +733,13 @@ function displayRegistrations(registrationsToDisplay) {
                 <p><strong>Tournament:</strong> ${registration.tournamentName}</p>
                 <p><strong>Time Slot:</strong> ${registration.timeSlot}</p>
             </div>
-            <div class="admin-actions">
-                <button class="send-confirm-email" data-uid="${registration.uid}">
-                    Send Confirmation Email
-                </button>
-            </div>
+            // Removed the admin-actions div and button here
         `;
         playerRegistrationsListEl.appendChild(registrationEntry);
     });
 
-    // Add event listeners for the confirmation email buttons
-    document.querySelectorAll('.send-confirm-email').forEach(button => {
-        button.addEventListener('click', function() {
-            const uid = this.dataset.uid;
-            sendPaymentConfirmationEmail(uid);
-        });
-    });
+    // Removed event listeners for the confirmation email buttons
+    // document.querySelectorAll(\'.send-confirm-email\').forEach(button => { ... });
 }
 
 // Function to load registrations from localStorage and display them
@@ -770,102 +761,7 @@ function handlePlayerSearch() {
     displayRegistrations(filtered);
 }
 
-// Update the sendPaymentConfirmationEmail function to directly send email and update status
-function sendPaymentConfirmationEmail(playerUID) {
-    const allRegistrations = JSON.parse(localStorage.getItem('tournamentRegistrations')) || [];
-    const registration = allRegistrations.find(reg => reg.uid === playerUID);
-
-    if (!registration) {
-        console.error('Registration data not found for UID:', playerUID);
-        showToast('Error: Could not find registration data for this player.', 'error');
-        return;
-    }
-
-    if (!registration.email) {
-        console.error('Email address is missing for player UID:', playerUID);
-        showToast('Error: Player email address is missing. Cannot send confirmation.', 'error');
-        return;
-    }
-
-    // Removed console.log for paymentVerified status before send attempt
-
-    const templateParams = {
-        to_email: registration.email,
-        from_name: 'FF Arena',
-        player_name: registration.name,
-        player_uid: registration.uid,
-        player_phone: registration.phone,
-        player_email: registration.email,
-        time_slot: registration.timeSlot,
-        tournament_name: registration.tournamentName,
-        entry_fee: registration.entryFee,
-        registration_date: registration.registrationDate,
-        confirmation_date: new Date().toLocaleString(),
-        tournament_type: registration.tournamentType
-    };
-
-    emailjs.send('service_j5u8d9n', 'template_98546qk', templateParams)
-        .then(function(response) {
-            console.log('PAYMENT CONFIRMATION EMAIL SUCCESS!', response.status, response.text);
-            showToast(`Payment confirmation email sent to ${registration.name}.`, 'success');
-
-            // Update registration status to confirmed and set paymentVerified internally
-            registration.status = 'confirmed';
-            registration.paymentVerified = true; // Keep this flag internally if needed
-
-            // Removed console.log for paymentVerified status after update
-
-            // Simply save and refresh display - button will not show 'Email Sent'
-            localStorage.setItem('tournamentRegistrations', JSON.stringify(allRegistrations));
-            loadAndDisplayRegistrations(); // Refresh the display
-
-        }, function(error) {
-            console.log('PAYMENT CONFIRMATION EMAIL FAILED...', error);
-            showToast(`Failed to send payment confirmation email to ${registration.name}. Error: ${error.text || error}`, 'error');
-        });
-}
-
-// Add event listeners for admin panel after it's shown
-function setupAdminPanelListeners() {
-     // Search input listener
-    if (adminPlayerSearchInput) {
-        adminPlayerSearchInput.addEventListener('input', handlePlayerSearch);
-    }
-
-    // Load registrations when the admin panel is opened
-    const adminBtn = document.getElementById('admin-btn');
-    if(adminBtn) {
-        // The event listener to load registrations is added separately below,
-        // triggered after handleAdminAccess potentially shows the panel.
-        // We also added a listener for the click to potentially call loadAndDisplayRegistrations
-        // after the panel is visible in handleAdminAccess.
-        // Let's ensure the load is called when the panel becomes visible.
-    }
-}
-
-// Call setupAdminPanelListeners on DOMContentLoaded or after the admin panel is ready
-document.addEventListener('DOMContentLoaded', setupAdminPanelListeners);
-
-// Ensure registrations are loaded when admin panel is accessed
-// This listener checks if the panel is visible before loading registrations.
-const adminBtnForLoad = document.getElementById('admin-btn');
-if (adminBtnForLoad) {
-    adminBtnForLoad.addEventListener('click', () => {
-        // Check if the admin panel is actually visible after password check
-        const adminPanel = document.getElementById('admin-panel');
-        // Use a small delay to allow the class 'visible' to be added if it's an async operation
-        setTimeout(() => {
-            if (adminPanel && adminPanel.classList.contains('visible')) {
-                 console.log('Admin panel visible, loading registrations');
-                 loadAndDisplayRegistrations();
-            } else {
-                 console.log('Admin panel not visible after click, skipping registration load');
-            }
-        }, 50);
-    });
-}
-
-// Update the submitRegistration function to only store data and notify admin
+// Update the submitRegistration function to send email directly to user
 function submitRegistration() {
     console.log('submitRegistration function called');
 
@@ -903,7 +799,7 @@ function submitRegistration() {
         return;
     }
 
-    // Store player data with pending payment status
+    // Store player data with initial status
     const playerData = {
         name: playerName,
         uid: playerUID,
@@ -913,16 +809,42 @@ function submitRegistration() {
         tournamentName: currentTournament.name,
         entryFee: currentTournament.entryFee,
         registrationDate: new Date().toISOString(),
-        status: 'pending_payment', // Changed to pending_payment
+        status: 'registered', // Set initial status
         tournamentType: tournamentType,
-        paymentVerified: false // Added payment verification flag
+        paymentVerified: false // Initial state
     };
 
     let registrations = JSON.parse(localStorage.getItem('tournamentRegistrations')) || [];
     registrations.push(playerData);
     localStorage.setItem('tournamentRegistrations', JSON.stringify(registrations));
 
-    // Send email notification only to admin
+    // Prepare template parameters for the confirmation email to the player
+    const playerConfirmationParams = {
+         to_email: playerEmail, // Send to the player's email
+         from_name: 'FF Arena', // Your desired sender name
+         player_name: playerName,
+         player_uid: playerUID,
+         player_phone: playerPhone,
+         player_email: playerEmail,
+         time_slot: timeSlot,
+         tournament_name: currentTournament.name,
+         entry_fee: currentTournament.entryFee,
+         registration_date: new Date().toLocaleString(),
+         tournament_type: tournamentType
+     };
+
+     // Send the confirmation email to the player
+     emailjs.send('service_j5u8d9n', 'template_98546qk', playerConfirmationParams)
+         .then(function(response) {
+             console.log('PLAYER CONFIRMATION EMAIL SUCCESS!', response.status, response.text);
+             // Optional: Update status in localStorage after successful send if needed for admin view
+             // loadAndDisplayRegistrations(); // Might refresh too early
+         }, function(error) {
+             console.log('PLAYER CONFIRMATION EMAIL FAILED...', error);
+             showToast(`Failed to send confirmation email to ${playerName}. Error: ${error.text || error}`, 'error');
+         });
+
+    // Also send email notification only to admin (if still desired)
     const adminNotificationParams = {
         to_email: 'adarshyt093@gmail.com', // Admin email
         from_name: 'FF Arena',
@@ -937,13 +859,13 @@ function submitRegistration() {
         tournament_type: tournamentType
     };
 
-    // Send email to admin
-    emailjs.send('service_j5u8d9n', 'template_98546qk', adminNotificationParams)
-        .then(function(response) {
-            console.log('ADMIN NOTIFICATION EMAIL SUCCESS!', response.status, response.text);
-        }, function(error) {
-            console.log('ADMIN NOTIFICATION EMAIL FAILED...', error);
-        });
+     // Send email to admin
+     emailjs.send('service_j5u8d9n', 'template_98546qk', adminNotificationParams)
+         .then(function(response) {
+             console.log('ADMIN NOTIFICATION EMAIL SUCCESS!', response.status, response.text);
+         }, function(error) {
+             console.log('ADMIN NOTIFICATION EMAIL FAILED...', error);
+         });
 
     // Show success message to user
     showToast(`Registration submitted! Please complete your payment and contact admin for confirmation.`, 'info');
