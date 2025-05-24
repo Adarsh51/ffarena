@@ -151,7 +151,7 @@ function toggleTheme() {
 
 // Admin Panel Management
 const ADMIN_PASSWORD = "Admin123!"; // Hard-coded admin password
-let currentUpiId = "tournament@paytm"; // Default UPI ID
+let currentUpiId = "brokeuglykid@axl"; // Default UPI ID
 let selectedTournamentId = null; // Currently selected tournament for fee editing
 
 /**
@@ -476,7 +476,7 @@ function openPaymentModal(tournament) {
     addTournamentForm(tournament);
     
     // Reset form state
-    document.getElementById('upi-id').value = 'tournament@paytm';
+    document.getElementById('upi-id').value = 'brokeuglykid@axl';
     document.getElementById('upi-radio').checked = true;
     
     togglePaymentMethod();
