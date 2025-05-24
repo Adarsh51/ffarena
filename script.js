@@ -475,11 +475,10 @@ function openPaymentModal(tournament) {
     // Add tournament type and time slot selection
     addTournamentForm(tournament);
     
-    // Reset form state
-    document.getElementById('upi-id').value = 'brokeuglykid@axl';
-    document.getElementById('upi-radio').checked = true;
+    // Reset QR radio button and hide QR section
+    document.getElementById('qr-radio').checked = false;
+    document.getElementById('qr-section').classList.add('hidden');
     
-    togglePaymentMethod();
     paymentModal.classList.add('open');
     document.body.style.overflow = 'hidden';
 }
@@ -651,11 +650,11 @@ function setupEventListeners() {
         }
     });
 
-    // Payment method toggle
-    const upiRadio = document.getElementById('upi-radio');
+    // QR code radio button event listener
     const qrRadio = document.getElementById('qr-radio');
-    if (upiRadio) upiRadio.addEventListener('change', togglePaymentMethod);
-    if (qrRadio) qrRadio.addEventListener('change', togglePaymentMethod);
+    if (qrRadio) {
+        qrRadio.addEventListener('change', toggleQRCode);
+    }
 
     // Payment processing
     const payBtn = document.getElementById('pay-btn');
@@ -784,22 +783,6 @@ function closePaymentModal() {
     const tournamentForm = document.getElementById('tournament-form');
     if (tournamentForm) {
         tournamentForm.remove();
-    }
-}
-
-function togglePaymentMethod() {
-    const upiSection = document.getElementById('upi-section');
-    const qrSection = document.getElementById('qr-section');
-    const upiRadio = document.getElementById('upi-radio');
-    
-    if (upiSection && qrSection && upiRadio) {
-        if (upiRadio.checked) {
-            upiSection.classList.remove('hidden');
-            qrSection.classList.add('hidden');
-        } else {
-            upiSection.classList.add('hidden');
-            qrSection.classList.remove('hidden');
-        }
     }
 }
 
@@ -957,3 +940,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300 + (index * 200));
     });
 });
+
+function toggleQRCode() {
+    const qrSection = document.getElementById('qr-section');
+    const qrRadio = document.getElementById('qr-radio');
+    
+    if (qrSection && qrRadio) {
+        if (qrRadio.checked) {
+            qrSection.classList.remove('hidden');
+        } else {
+            qrSection.classList.add('hidden');
+        }
+    }
+}
