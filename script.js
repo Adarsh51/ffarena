@@ -74,6 +74,8 @@ let playerProfile = null;
 
 // DOM Elements
 const tournamentList = document.getElementById('tournament-list');
+console.log('Initial tournamentList element:', tournamentList);
+
 const searchInput = document.getElementById('search-input');
 const sortSelect = document.getElementById('sort-select');
 const paymentModal = document.getElementById('payment-modal');
@@ -83,16 +85,23 @@ const hamburger = document.getElementById('hamburger');
 const navMenu = document.getElementById('nav-menu');
 const themeSwitch = document.getElementById('theme-switch');
 
+// Admin Panel Player Registration Management
+const playerRegistrationsListEl = document.getElementById('player-registrations-list');
+const adminPlayerSearchInput = document.getElementById('admin-player-search');
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired, initializing app'); // Log init start
     loadPlayerProfile();
     loadTheme();
     loadAdminSettings(); // Load admin settings from localStorage
     checkFirstVisit();
     renderTournaments();
     startCountdowns();
-    setupEventListeners();
     setupNavigation();
+    setupEventListeners();
+    setupAdminPanelListeners();
+    console.log('App initialization complete'); // Log init end
 });
 
 // LocalStorage Player Profile Management
@@ -404,9 +413,27 @@ function hideAdminToast() {
     }
 }
 
+// Format date to a user-friendly string
+function formatDate(dateString) {
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
 // Enhanced Tournament Rendering
 function renderTournaments() {
+    console.log('renderTournaments called');
+    console.log('filteredTournaments:', filteredTournaments);
+    console.log('tournamentList element:', tournamentList);
+
     if (filteredTournaments.length === 0) {
+        console.log('No tournaments to display');
         if (tournamentList) {
             tournamentList.innerHTML = `
                 <div class="no-results">
@@ -420,8 +447,10 @@ function renderTournaments() {
     }
 
     if (tournamentList) {
+        console.log('Rendering tournament cards');
         tournamentList.innerHTML = '';
         filteredTournaments.forEach((tournament, index) => {
+            console.log('Rendering tournament:', tournament.name);
             const card = document.createElement('div');
             card.className = 'tournament-card';
             
@@ -446,10 +475,14 @@ function renderTournaments() {
                 <div class="countdown" data-date="${tournament.date}"></div>
             `;
             tournamentList.appendChild(card);
+            console.log('Tournament card added:', tournament.name);
         });
 
         // Update countdowns after rendering
         updateCountdowns();
+        console.log('Tournament rendering complete');
+    } else {
+        console.error('tournamentList element not found!');
     }
 }
 
@@ -469,333 +502,52 @@ function openPaymentModal(tournament) {
     document.getElementById('modal-title').textContent = `Join ${tournament.name}`;
     document.getElementById('modal-fee').textContent = `Entry Fee: ₹${tournament.entryFee}`;
     
-    // Pre-fill player information
-    document.getElementById('player-name').value = playerProfile.name;
-    
-    // Add tournament type and time slot selection
-    addTournamentForm(tournament);
-    
+    // Pre-fill player information if profile exists
+    if(playerProfile) {
+        const playerNameInput = document.getElementById('player-name');
+        if(playerNameInput) {
+            playerNameInput.value = playerProfile.name;
+        }
+         // Pre-fill UID and Email if they were saved in the profile (optional, you might not have added this yet)
+         // const playerUIDInput = document.getElementById('player-uid');
+         // if(playerUIDInput && playerProfile.uid) playerUIDInput.value = playerProfile.uid;
+         // const playerEmailInput = document.getElementById('player-email');
+         // if(playerEmailInput && playerProfile.email) playerEmailInput.value = playerProfile.email;
+    }
+
+    // The form fields (name, uid, phone, email, time slot) are now part of the static HTML.
+    // We no longer need to dynamically add them.
+    // remove the call to addTournamentForm(tournament);
+
     // Reset QR radio button and hide QR section
-    document.getElementById('qr-radio').checked = false;
-    document.getElementById('qr-section').classList.add('hidden');
-    
+    const qrRadio = document.getElementById('qr-radio');
+    const qrSection = document.getElementById('qr-section');
+    if(qrRadio) qrRadio.checked = false;
+    if(qrSection) qrSection.classList.add('hidden');
+
     paymentModal.classList.add('open');
     document.body.style.overflow = 'hidden';
-}
 
-function addTournamentForm(tournament) {
-    const modalBody = document.querySelector('#payment-modal .modal-body');
-    
-    // Remove existing tournament form if any
-    const existingForm = document.getElementById('tournament-form');
-    if (existingForm) {
-        existingForm.remove();
-    }
-    
-    // Create new tournament form
-    const tournamentForm = document.createElement('div');
-    tournamentForm.id = 'tournament-form';
-    tournamentForm.innerHTML = `
-        <div class="form-group">
-            <input type="text" id="tournament-type" value="${tournament.mode}" readonly>
-            <label for="tournament-type">Tournament Type</label>
-        </div>
-        
-        <div class="form-group">
-            <select id="time-slot" required>
-                <option value="">Choose a time slot</option>
-                ${tournament.slots.map(slot => `<option value="${slot}">${slot}</option>`).join('')}
-            </select>
-            <label for="time-slot">Select Time Slot</label>
-        </div>
-    `;
-    
-    // Insert after player name field
-    const playerNameGroup = modalBody.querySelector('.form-group');
-    playerNameGroup.after(tournamentForm);
-}
-
-// Enhanced payment processing
-function processPayment() {
-    const playerName = document.getElementById('player-name').value.trim();
-    const tournamentType = document.getElementById('tournament-type').value;
-    const timeSlot = document.getElementById('time-slot').value;
-    
-    if (!playerName) {
-        showToast('Please enter your player name', 'error');
-        return;
-    }
-    
-    if (!timeSlot) {
-        showToast('Please select a time slot', 'error');
-        return;
-    }
-
-    const payBtn = document.getElementById('pay-btn');
-    
-    // Disable pay button and show loading
-    payBtn.disabled = true;
-    payBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Payment...';
-    
-    // Simulate payment processing
-    setTimeout(() => {
-        payBtn.disabled = false;
-        payBtn.innerHTML = '<i class="fas fa-check"></i> Payment Successful!';
-        payBtn.style.background = 'var(--success-color)';
-        
-        showToast(`Successfully registered for ${currentTournament.name}! Tournament details sent to your profile.`, 'success');
-        
-        // Close modal after successful payment
-        setTimeout(() => {
-            closePaymentModal();
-        }, 2000);
-        
-        // Reset button after delay
-        setTimeout(() => {
-            payBtn.innerHTML = '<i class="fas fa-credit-card"></i> Process Payment';
-            payBtn.style.background = '';
-        }, 3000);
-    }, 2500);
-}
-
-// Event Listeners Setup
-function setupEventListeners() {
-    if (searchInput) searchInput.addEventListener('input', handleSearch);
-    if (sortSelect) sortSelect.addEventListener('change', handleSort);
-    
-    // Theme toggle
-    if (themeSwitch) {
-        themeSwitch.addEventListener('change', toggleTheme);
-    }
-    
-    // Admin panel event listeners
-    const adminBtn = document.getElementById('admin-btn');
-    const closeAdminBtn = document.getElementById('close-admin-panel');
-    const saveSettingsBtn = document.getElementById('save-settings');
-    const adminPanel = document.getElementById('admin-panel');
-    
-    // Admin button click - trigger password prompt and panel toggle
-    if (adminBtn) {
-        adminBtn.addEventListener('click', handleAdminAccess);
-    }
-    
-    // Close admin panel button
-    if (closeAdminBtn) {
-        closeAdminBtn.addEventListener('click', closeAdminPanel);
-    }
-    
-    // Save settings button
-    if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', saveAdminSettings);
-    }
-    
-    // Tournament selection dropdown
-    const tournamentSelect = document.getElementById('tournament-select');
-    if (tournamentSelect) {
-        tournamentSelect.addEventListener('change', handleTournamentSelection);
-    }
-    
-    // Close panel when clicking outside it
-    if (adminPanel) {
-        document.addEventListener('click', function(e) {
-            if (e.target === adminPanel) {
-                closeAdminPanel();
-            }
-        });
-    }
-    
-    // Close panel on Escape key press
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && adminPanel && adminPanel.classList.contains('visible')) {
-            closeAdminPanel();
-        }
-    });
-    
-    // Profile modal events
-    const saveProfileBtn = document.getElementById('save-profile-btn');
-    if (saveProfileBtn) {
-        saveProfileBtn.addEventListener('click', function() {
-            const name = document.getElementById('profile-name').value.trim();
-            const uid = document.getElementById('profile-uid').value.trim();
-            
-            if (!name || !uid) {
-                showToast('Please fill in all fields', 'error');
-                return;
-            }
-            
-            savePlayerProfile(name, uid);
-            profileModal.classList.remove('open');
-            document.body.style.overflow = 'auto';
-            showToast(`Welcome to FF Arena, ${name}!`, 'success');
-        });
-    }
-    
-    // Tournament card click events
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('join-btn') || e.target.closest('.join-btn')) {
-            const btn = e.target.classList.contains('join-btn') ? e.target : e.target.closest('.join-btn');
-            if (btn.disabled) return;
-            
-            const tournamentId = parseInt(btn.dataset.id);
-            const tournament = tournaments.find(t => t.id === tournamentId);
-            openPaymentModal(tournament);
-        }
-    });
-
-    // Modal events
-    if (closeModal) closeModal.addEventListener('click', closePaymentModal);
-    document.addEventListener('click', function(e) {
-        if (e.target === paymentModal) {
-            closePaymentModal();
-        }
-    });
-
-    // QR code radio button event listener
-    const qrRadio = document.getElementById('qr-radio');
-    if (qrRadio) {
-        qrRadio.addEventListener('change', toggleQRCode);
-    }
-
-    // Payment processing
-    const payBtn = document.getElementById('pay-btn');
-    if (payBtn) payBtn.addEventListener('click', processPayment);
-
-    // Toast close
-    const toastClose = document.getElementById('toast-close');
-    if (toastClose) toastClose.addEventListener('click', hideToast);
-}
-
-// Search functionality
-function handleSearch() {
-    const searchTerm = searchInput.value.toLowerCase().trim();
-    
-    if (searchTerm === '') {
-        filteredTournaments = [...tournaments];
-    } else {
-        filteredTournaments = tournaments.filter(tournament =>
-            tournament.name.toLowerCase().includes(searchTerm) ||
-            tournament.description.toLowerCase().includes(searchTerm) ||
-            tournament.mode.toLowerCase().includes(searchTerm)
-        );
-    }
-    
-    renderTournaments();
-}
-
-// Sorting functionality
-function handleSort() {
-    const sortBy = sortSelect.value;
-    
-    filteredTournaments.sort((a, b) => {
-        switch (sortBy) {
-            case 'date':
-                return new Date(a.date) - new Date(b.date);
-            case 'fee':
-                return a.entryFee - b.entryFee;
-            case 'prize':
-                return b.prize - a.prize;
-            case 'name':
-                return a.name.localeCompare(b.name);
-            default:
-                return 0;
-        }
-    });
-    
-    renderTournaments();
-}
-
-// Navigation setup
-function setupNavigation() {
-    if (hamburger && navMenu) {
-        hamburger.addEventListener('click', function() {
-            hamburger.classList.toggle('active');
-            navMenu.classList.toggle('active');
-        });
-
-        // Close mobile menu when clicking on a link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function() {
-                hamburger.classList.remove('active');
-                navMenu.classList.remove('active');
-            });
-        });
-    }
-
-    // Enhanced navbar scroll effect with smooth animations
-    window.addEventListener('scroll', function() {
-        const navbar = document.getElementById('navbar');
-        if (navbar) {
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        }
-    });
-    
-    // Add active state to current navigation link
-    updateActiveNavLink();
-}
-
-/**
- * Update active navigation link based on scroll position
- */
-function updateActiveNavLink() {
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-link');
-    
-    window.addEventListener('scroll', function() {
-        let current = '';
-        
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-            if (window.scrollY >= (sectionTop - 200)) {
-                current = section.getAttribute('id');
-            }
-        });
-        
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === `#${current}`) {
-                link.classList.add('active');
-            }
-        });
-    });
-}
-
-// Utility functions
-function scrollToSection(sectionId) {
-    const element = document.getElementById(sectionId);
-    if (element) {
-        element.scrollIntoView({
-            behavior: 'smooth'
+    // Populate time slot options dynamically based on the selected tournament
+    const timeSlotSelect = document.getElementById('time-slot');
+    if (timeSlotSelect && tournament && tournament.slots) {
+        // Clear existing options except the first one (Choose a time slot)
+        timeSlotSelect.innerHTML = '<option value="">Choose a time slot</option>';
+        tournament.slots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = slot;
+            option.textContent = slot;
+            timeSlotSelect.appendChild(option);
         });
     }
 }
 
-function closePaymentModal() {
-    paymentModal.classList.remove('open');
-    document.body.style.overflow = 'auto';
-    currentTournament = null;
-    
-    // Remove tournament form
-    const tournamentForm = document.getElementById('tournament-form');
-    if (tournamentForm) {
-        tournamentForm.remove();
-    }
-}
+// Initialize EmailJS
+(function() {
+    emailjs.init("X7xFBqM3m8p74ixSl"); // Replaced with your EmailJS public key
+})();
 
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-}
-
+// Show instructions to the user to complete payment
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
@@ -952,4 +704,524 @@ function toggleQRCode() {
             qrSection.classList.add('hidden');
         }
     }
+}
+
+// Update the displayRegistrations function to revert to simple layout with always-enabled confirmation button
+function displayRegistrations(registrationsToDisplay) {
+    if (!playerRegistrationsListEl) return;
+
+    playerRegistrationsListEl.innerHTML = ''; // Clear current list
+
+    if (!registrationsToDisplay || registrationsToDisplay.length === 0) {
+        playerRegistrationsListEl.innerHTML = '<p style="text-align: center; color: #666;">No registrations found.</p>';
+        return;
+    }
+
+    registrationsToDisplay.forEach(registration => {
+        // Removed console.log for paymentVerified status
+        const registrationEntry = document.createElement('div');
+        registrationEntry.classList.add('registration-entry');
+
+        // Removed tick mark logic
+        // const verifiedTickHTML = registration.paymentVerified ? '<span class="verified-tick"><i class="fas fa-check-circle"></i></span>' : '';
+
+        registrationEntry.innerHTML = `
+            <div class="registration-details">
+                <p><strong>Name:</strong> ${registration.name}</p>
+                <p><strong>UID:</strong> ${registration.uid}</p>
+                <p><strong>Email:</strong> ${registration.email}</p>
+                <p><strong>Tournament:</strong> ${registration.tournamentName}</p>
+                <p><strong>Time Slot:</strong> ${registration.timeSlot}</p>
+            </div>
+            <div class="admin-actions">
+                <button class="send-confirm-email" data-uid="${registration.uid}">
+                    Send Confirmation Email
+                </button>
+            </div>
+        `;
+        playerRegistrationsListEl.appendChild(registrationEntry);
+    });
+
+    // Add event listeners for the confirmation email buttons
+    document.querySelectorAll('.send-confirm-email').forEach(button => {
+        button.addEventListener('click', function() {
+            const uid = this.dataset.uid;
+            sendPaymentConfirmationEmail(uid);
+        });
+    });
+}
+
+// Function to load registrations from localStorage and display them
+function loadAndDisplayRegistrations() {
+    const registrations = JSON.parse(localStorage.getItem('tournamentRegistrations')) || [];
+    displayRegistrations(registrations);
+}
+
+// Handle player search input
+function handlePlayerSearch() {
+    const searchTerm = adminPlayerSearchInput.value.toLowerCase().trim();
+    const allRegistrations = JSON.parse(localStorage.getItem('tournamentRegistrations')) || [];
+
+    const filtered = allRegistrations.filter(reg =>
+        reg.name.toLowerCase().includes(searchTerm) ||
+        reg.uid.toLowerCase().includes(searchTerm)
+    );
+
+    displayRegistrations(filtered);
+}
+
+// Update the sendPaymentConfirmationEmail function to directly send email and update status
+function sendPaymentConfirmationEmail(playerUID) {
+    const allRegistrations = JSON.parse(localStorage.getItem('tournamentRegistrations')) || [];
+    const registration = allRegistrations.find(reg => reg.uid === playerUID);
+
+    if (!registration) {
+        console.error('Registration data not found for UID:', playerUID);
+        showToast('Error: Could not find registration data for this player.', 'error');
+        return;
+    }
+
+    if (!registration.email) {
+        console.error('Email address is missing for player UID:', playerUID);
+        showToast('Error: Player email address is missing. Cannot send confirmation.', 'error');
+        return;
+    }
+
+    // Removed console.log for paymentVerified status before send attempt
+
+    const templateParams = {
+        to_email: registration.email,
+        from_name: 'FF Arena',
+        player_name: registration.name,
+        player_uid: registration.uid,
+        player_phone: registration.phone,
+        player_email: registration.email,
+        time_slot: registration.timeSlot,
+        tournament_name: registration.tournamentName,
+        entry_fee: registration.entryFee,
+        registration_date: registration.registrationDate,
+        confirmation_date: new Date().toLocaleString(),
+        tournament_type: registration.tournamentType
+    };
+
+    emailjs.send('service_j5u8d9n', 'template_98546qk', templateParams)
+        .then(function(response) {
+            console.log('PAYMENT CONFIRMATION EMAIL SUCCESS!', response.status, response.text);
+            showToast(`Payment confirmation email sent to ${registration.name}.`, 'success');
+
+            // Update registration status to confirmed and set paymentVerified internally
+            registration.status = 'confirmed';
+            registration.paymentVerified = true; // Keep this flag internally if needed
+
+            // Removed console.log for paymentVerified status after update
+
+            // Simply save and refresh display - button will not show 'Email Sent'
+            localStorage.setItem('tournamentRegistrations', JSON.stringify(allRegistrations));
+            loadAndDisplayRegistrations(); // Refresh the display
+
+        }, function(error) {
+            console.log('PAYMENT CONFIRMATION EMAIL FAILED...', error);
+            showToast(`Failed to send payment confirmation email to ${registration.name}. Error: ${error.text || error}`, 'error');
+        });
+}
+
+// Add event listeners for admin panel after it's shown
+function setupAdminPanelListeners() {
+     // Search input listener
+    if (adminPlayerSearchInput) {
+        adminPlayerSearchInput.addEventListener('input', handlePlayerSearch);
+    }
+
+    // Load registrations when the admin panel is opened
+    const adminBtn = document.getElementById('admin-btn');
+    if(adminBtn) {
+        // The event listener to load registrations is added separately below,
+        // triggered after handleAdminAccess potentially shows the panel.
+        // We also added a listener for the click to potentially call loadAndDisplayRegistrations
+        // after the panel is visible in handleAdminAccess.
+        // Let's ensure the load is called when the panel becomes visible.
+    }
+}
+
+// Call setupAdminPanelListeners on DOMContentLoaded or after the admin panel is ready
+document.addEventListener('DOMContentLoaded', setupAdminPanelListeners);
+
+// Ensure registrations are loaded when admin panel is accessed
+// This listener checks if the panel is visible before loading registrations.
+const adminBtnForLoad = document.getElementById('admin-btn');
+if (adminBtnForLoad) {
+    adminBtnForLoad.addEventListener('click', () => {
+        // Check if the admin panel is actually visible after password check
+        const adminPanel = document.getElementById('admin-panel');
+        // Use a small delay to allow the class 'visible' to be added if it's an async operation
+        setTimeout(() => {
+            if (adminPanel && adminPanel.classList.contains('visible')) {
+                 console.log('Admin panel visible, loading registrations');
+                 loadAndDisplayRegistrations();
+            } else {
+                 console.log('Admin panel not visible after click, skipping registration load');
+            }
+        }, 50);
+    });
+}
+
+// Update the submitRegistration function to only store data and notify admin
+function submitRegistration() {
+    console.log('submitRegistration function called');
+
+    // Get form elements and their values
+    const playerNameInput = document.getElementById('player-name');
+    const timeSlotSelect = document.getElementById('time-slot');
+    const playerEmailInput = document.getElementById('player-email');
+    const playerUIDInput = document.getElementById('player-uid');
+    const playerPhoneInput = document.getElementById('player-phone');
+
+    // Perform checks and get values only if elements are found
+    const playerName = playerNameInput ? playerNameInput.value.trim() : '';
+    const timeSlot = timeSlotSelect ? timeSlotSelect.value : '';
+    const playerEmail = playerEmailInput ? playerEmailInput.value.trim() : '';
+    const playerUID = playerUIDInput ? playerUIDInput.value.trim() : '';
+    const playerPhone = playerPhoneInput ? playerPhoneInput.value.trim() : '';
+
+    // Get tournament type from currentTournament
+    const tournamentType = currentTournament ? currentTournament.mode : 'N/A';
+
+    // Validation checks
+    if (!playerName || !timeSlot || !playerEmail || !playerUID || !playerPhone) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+    }
+
+    // Add UID and Phone validation
+    if (playerUID && !/^\d{8,10}$/.test(playerUID)) {
+        showToast('Please enter a valid UID (8-10 digits)', 'error');
+        return;
+    }
+
+    if (playerPhone && !/^\d{10}$/.test(playerPhone)) {
+        showToast('Please enter a valid 10-digit phone number', 'error');
+        return;
+    }
+
+    // Store player data with pending payment status
+    const playerData = {
+        name: playerName,
+        uid: playerUID,
+        phone: playerPhone,
+        email: playerEmail,
+        timeSlot: timeSlot,
+        tournamentName: currentTournament.name,
+        entryFee: currentTournament.entryFee,
+        registrationDate: new Date().toISOString(),
+        status: 'pending_payment', // Changed to pending_payment
+        tournamentType: tournamentType,
+        paymentVerified: false // Added payment verification flag
+    };
+
+    let registrations = JSON.parse(localStorage.getItem('tournamentRegistrations')) || [];
+    registrations.push(playerData);
+    localStorage.setItem('tournamentRegistrations', JSON.stringify(registrations));
+
+    // Send email notification only to admin
+    const adminNotificationParams = {
+        to_email: 'adarshyt093@gmail.com', // Admin email
+        from_name: 'FF Arena',
+        player_name: playerName,
+        player_uid: playerUID,
+        player_phone: playerPhone,
+        player_email: playerEmail,
+        time_slot: timeSlot,
+        tournament_name: currentTournament.name,
+        entry_fee: currentTournament.entryFee,
+        registration_date: new Date().toLocaleString(),
+        tournament_type: tournamentType
+    };
+
+    // Send email to admin
+    emailjs.send('service_j5u8d9n', 'template_98546qk', adminNotificationParams)
+        .then(function(response) {
+            console.log('ADMIN NOTIFICATION EMAIL SUCCESS!', response.status, response.text);
+        }, function(error) {
+            console.log('ADMIN NOTIFICATION EMAIL FAILED...', error);
+        });
+
+    // Show success message to user
+    showToast(`Registration submitted! Please complete your payment and contact admin for confirmation.`, 'info');
+
+    // Close modal after toast has been visible for a bit
+    setTimeout(() => {
+        closePaymentModal();
+
+        // Show WhatsApp link confirmation after modal closes
+        const whatsappGroupLink = 'https://chat.whatsapp.com/GST0oEiJmUR1CDktUnRz55';
+        showWhatsAppLinkConfirmation(whatsappGroupLink, 7000);
+    }, 3000);
+}
+
+// Function to display WhatsApp group link after registration
+function showWhatsAppLinkConfirmation(whatsappLink, duration = 7000) {
+    const confirmationDiv = document.createElement('div');
+    confirmationDiv.classList.add('registration-success-message');
+    confirmationDiv.style.position = 'fixed';
+    confirmationDiv.style.top = '50%';
+    confirmationDiv.style.left = '50%';
+    confirmationDiv.style.transform = 'translate(-50%, -50%)';
+    confirmationDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.9)'; // Darker background
+    confirmationDiv.style.color = '#ffffff'; // White text
+    confirmationDiv.style.padding = '30px';
+    confirmationDiv.style.borderRadius = '15px';
+    confirmationDiv.style.boxShadow = '0 5px 25px rgba(0,0,0,0.5)';
+    confirmationDiv.style.zIndex = '1000';
+    confirmationDiv.style.textAlign = 'center';
+    confirmationDiv.style.opacity = '0';
+    confirmationDiv.style.transition = 'opacity 0.5s ease-in-out';
+    confirmationDiv.style.maxWidth = '90%';
+    confirmationDiv.style.width = '400px'; // Fixed width
+    confirmationDiv.style.border = '2px solid var(--accent-color)'; // Add border
+
+    confirmationDiv.innerHTML = `
+        <h3 style="color: #25D366; margin-top: 0; font-size: 24px; margin-bottom: 20px;">
+            <i class="fas fa-check-circle"></i> Registration Submitted!
+        </h3>
+        <p style="margin-bottom: 25px; font-size: 16px; line-height: 1.5;">
+            Please complete your payment and contact admin for confirmation. 
+            Join our WhatsApp group for updates and tournament information:
+        </p>
+        <a href="${whatsappLink}" target="_blank" 
+           style="display: inline-block; 
+                  background-color: #25D366; 
+                  color: white; 
+                  padding: 12px 25px; 
+                  border-radius: 8px; 
+                  text-decoration: none; 
+                  font-weight: bold;
+                  font-size: 16px;
+                  transition: all 0.3s ease;
+                  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
+            <i class="fab fa-whatsapp"></i> Join WhatsApp Group
+        </a>
+        <button class="close-confirmation-message" 
+                style="position: absolute; 
+                       top: 15px; 
+                       right: 15px; 
+                       background: none; 
+                       border: none; 
+                       font-size: 24px; 
+                       cursor: pointer; 
+                       color: #ffffff;
+                       opacity: 0.7;
+                       transition: opacity 0.3s ease;">×</button>
+    `;
+
+    document.body.appendChild(confirmationDiv);
+
+    // Fade in
+    setTimeout(() => { confirmationDiv.style.opacity = '1'; }, 50);
+
+    // Add close button functionality
+    confirmationDiv.querySelector('.close-confirmation-message').addEventListener('click', () => {
+        confirmationDiv.style.opacity = '0';
+        setTimeout(() => { confirmationDiv.remove(); }, 500);
+    });
+
+    // Automatically fade out and remove after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            confirmationDiv.style.opacity = '0';
+            setTimeout(() => { confirmationDiv.remove(); }, 500);
+        }, duration);
+    }
+}
+
+// Handle search input
+function handleSearch() {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    filteredTournaments = tournaments.filter(tournament => 
+        tournament.name.toLowerCase().includes(searchTerm) ||
+        tournament.description.toLowerCase().includes(searchTerm) ||
+        tournament.mode.toLowerCase().includes(searchTerm)
+    );
+    renderTournaments();
+}
+
+// Handle sort selection
+function handleSort() {
+    const sortValue = sortSelect.value;
+    switch(sortValue) {
+        case 'date-asc':
+            filteredTournaments.sort((a, b) => new Date(a.date) - new Date(b.date));
+            break;
+        case 'date-desc':
+            filteredTournaments.sort((a, b) => new Date(b.date) - new Date(a.date));
+            break;
+        case 'fee-asc':
+            filteredTournaments.sort((a, b) => a.entryFee - b.entryFee);
+            break;
+        case 'fee-desc':
+            filteredTournaments.sort((a, b) => b.entryFee - a.entryFee);
+            break;
+        case 'prize-asc':
+            filteredTournaments.sort((a, b) => a.prize - b.prize);
+            break;
+        case 'prize-desc':
+            filteredTournaments.sort((a, b) => b.prize - a.prize);
+            break;
+        default:
+            // Reset to original order
+            filteredTournaments = [...tournaments];
+    }
+    renderTournaments();
+}
+
+// Setup navigation functionality
+function setupNavigation() {
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('nav-menu');
+    
+    if (hamburger && navMenu) {
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        });
+
+        // Close menu when clicking a nav link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            });
+        });
+    }
+}
+
+// Smooth scroll to section
+function scrollToSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Close payment modal
+function closePaymentModal() {
+    console.log('Closing payment modal');
+    const paymentModal = document.getElementById('payment-modal');
+    if (paymentModal) {
+        paymentModal.classList.remove('open');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Event Listeners Setup
+function setupEventListeners() {
+    console.log('setupEventListeners called'); // Log function start
+
+    // Ensure essential elements are found
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
+    const paymentModal = document.getElementById('payment-modal');
+    const profileModal = document.getElementById('profile-modal');
+    const closeModal = document.getElementById('close-modal');
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('nav-menu');
+    const themeSwitch = document.getElementById('theme-switch');
+    const adminBtn = document.getElementById('admin-btn');
+    const closeAdminBtn = document.getElementById('close-admin-panel');
+    const saveSettingsBtn = document.getElementById('save-settings');
+    const adminPanel = document.getElementById('admin-panel');
+    const qrRadio = document.getElementById('qr-radio');
+    const payBtn = document.getElementById('pay-btn');
+    const toastClose = document.getElementById('toast-close');
+    const saveProfileBtn = document.getElementById('save-profile-btn');
+
+    if (searchInput) searchInput.addEventListener('input', handleSearch);
+    if (sortSelect) sortSelect.addEventListener('change', handleSort);
+
+    // Theme toggle
+    if (themeSwitch) {
+        themeSwitch.addEventListener('change', toggleTheme);
+    }
+
+    // Admin panel basic button listeners
+    if (adminBtn) adminBtn.addEventListener('click', handleAdminAccess);
+    if (closeAdminBtn) closeAdminBtn.addEventListener('click', closeAdminPanel);
+    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveAdminSettings);
+
+    // Modal close listeners
+    if (closeModal) closeModal.addEventListener('click', closePaymentModal);
+    document.addEventListener('click', function(e) {
+        if (e.target === paymentModal) {
+            console.log('Clicked outside payment modal, closing');
+            closePaymentModal();
+        }
+        if (profileModal && profileModal.classList.contains('open') && playerProfile && e.target === profileModal) {
+            console.log('Clicked outside profile modal, closing');
+            profileModal.classList.remove('open');
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    // Profile modal save button listener
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', function() {
+            const name = document.getElementById('profile-name').value.trim();
+            const uid = document.getElementById('profile-uid').value.trim();
+
+            if (!name || !uid) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            savePlayerProfile(name, uid);
+            profileModal.classList.remove('open');
+            document.body.style.overflow = 'auto';
+            showToast(`Welcome to FF Arena, ${name}!`, 'success');
+        });
+    }
+
+    // Tournament card click events
+    const tournamentList = document.getElementById('tournament-list');
+    if (tournamentList) {
+        tournamentList.addEventListener('click', function(e) {
+            console.log('Tournament list click detected', e.target);
+            const joinBtn = e.target.closest('.join-btn');
+            if (joinBtn) {
+                console.log('Join button clicked');
+                if (joinBtn.disabled) {
+                    console.log('Button is disabled, not opening modal');
+                    return;
+                }
+
+                const tournamentId = parseInt(joinBtn.dataset.id);
+                console.log('Tournament ID:', tournamentId);
+                const tournament = tournaments.find(t => t.id === tournamentId);
+
+                if (tournament) {
+                    console.log('Opening payment modal for tournament:', tournament.name);
+                    openPaymentModal(tournament);
+                } else {
+                    console.log('Error: Tournament not found for ID:', tournamentId);
+                }
+            }
+        });
+    }
+
+    // QR code radio button event listener
+    if (qrRadio) {
+        qrRadio.addEventListener('change', toggleQRCode);
+    }
+
+    // Registration Submission Button listener
+    if (payBtn) {
+        console.log('pay-btn element found, attaching submitRegistration listener');
+        payBtn.addEventListener('click', submitRegistration);
+        console.log('submitRegistration listener attached to pay-btn');
+    } else {
+        console.error('pay-btn element not found!');
+    }
+
+    // Toast close
+    if (toastClose) toastClose.addEventListener('click', hideToast);
+
+    console.log('setupEventListeners complete'); // Log function end
 }
