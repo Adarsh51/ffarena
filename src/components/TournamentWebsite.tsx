@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +35,8 @@ interface GameSettings {
   upi_id: string;
 }
 
+type TournamentType = 'solo' | 'duo' | 'squad';
+
 const TournamentWebsite = () => {
   const { user, isSignedIn } = useUser();
   const { signOut } = useAuth();
@@ -54,7 +55,7 @@ const TournamentWebsite = () => {
   // Form states
   const [inGameName, setInGameName] = useState('');
   const [freeFireUID, setFreeFireUID] = useState('');
-  const [tournamentType, setTournamentType] = useState('');
+  const [tournamentType, setTournamentType] = useState<TournamentType | ''>('');
   const [slotTime, setSlotTime] = useState('');
   
   // Modal states
@@ -73,7 +74,7 @@ const TournamentWebsite = () => {
     upi_id: 'ffarena@paytm'
   });
   const [newWinnerName, setNewWinnerName] = useState('');
-  const [newWinnerType, setNewWinnerType] = useState('');
+  const [newWinnerType, setNewWinnerType] = useState<TournamentType | ''>('');
 
   // Load theme and data on mount
   useEffect(() => {
@@ -242,14 +243,14 @@ const TournamentWebsite = () => {
 
   // Handle payment completion
   const handlePaymentComplete = async () => {
-    if (!playerProfile) return;
+    if (!playerProfile || !tournamentType) return;
 
     try {
       const { error } = await supabase
         .from('tournament_registrations')
         .insert([{
           player_id: playerProfile.id,
-          tournament_type: tournamentType,
+          tournament_type: tournamentType as TournamentType,
           slot_time: slotTime,
           payment_status: 'completed'
         }]);
@@ -370,7 +371,7 @@ const TournamentWebsite = () => {
         .from('winners')
         .insert([{
           player_name: newWinnerName,
-          tournament_type: newWinnerType,
+          tournament_type: newWinnerType as TournamentType,
           tournament_date: new Date().toISOString()
         }]);
 
