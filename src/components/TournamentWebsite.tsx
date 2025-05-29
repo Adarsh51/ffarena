@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import QRCode from 'qrcode';
 import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download } from 'lucide-react';
 
 interface Player {
@@ -224,21 +223,8 @@ const TournamentWebsite = () => {
       return;
     }
 
-    // Generate QR code for payment
-    const upiUrl = `upi://pay?pa=${settings.upi_id}&pn=FF Arena&am=${settings[`entry_fee_${tournamentType}` as keyof GameSettings]}&cu=INR&tn=Tournament Entry Fee`;
-    
-    try {
-      const qrDataUrl = await QRCode.toDataURL(upiUrl);
-      setQrCodeDataUrl(qrDataUrl);
-      setIsPaymentModalOpen(true);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate payment QR code",
-        variant: "destructive"
-      });
-    }
+    // Open payment modal directly
+    setIsPaymentModalOpen(true);
   };
 
   // Handle payment completion
@@ -794,11 +780,13 @@ const TournamentWebsite = () => {
               <p className="text-sm text-gray-600 dark:text-gray-300">UPI ID: {settings.upi_id}</p>
             </div>
             
-            {qrCodeDataUrl && (
-              <div className="flex justify-center">
-                <img src={qrCodeDataUrl} alt="Payment QR Code" className="w-48 h-48" />
-              </div>
-            )}
+            <div className="flex justify-center">
+              <img 
+                src="/placeholder.svg" 
+                alt="Payment QR Code" 
+                className="w-48 h-48 border rounded-lg"
+              />
+            </div>
             
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Scan the QR code or use the UPI ID to complete payment
