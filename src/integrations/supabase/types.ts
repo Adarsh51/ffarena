@@ -9,7 +9,119 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      players: {
+        Row: {
+          clerk_user_id: string
+          created_at: string | null
+          email: string
+          free_fire_uid: string | null
+          id: string
+          in_game_name: string | null
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          clerk_user_id: string
+          created_at?: string | null
+          email: string
+          free_fire_uid?: string | null
+          id?: string
+          in_game_name?: string | null
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          clerk_user_id?: string
+          created_at?: string | null
+          email?: string
+          free_fire_uid?: string | null
+          id?: string
+          in_game_name?: string | null
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tournament_registrations: {
+        Row: {
+          created_at: string | null
+          id: string
+          payment_status: string | null
+          player_id: string | null
+          slot_time: string
+          tournament_type: Database["public"]["Enums"]["tournament_type"]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payment_status?: string | null
+          player_id?: string | null
+          slot_time: string
+          tournament_type: Database["public"]["Enums"]["tournament_type"]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payment_status?: string | null
+          player_id?: string | null
+          slot_time?: string
+          tournament_type?: Database["public"]["Enums"]["tournament_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_registrations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      winners: {
+        Row: {
+          created_at: string | null
+          id: string
+          player_name: string
+          tournament_date: string | null
+          tournament_type: Database["public"]["Enums"]["tournament_type"]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          player_name: string
+          tournament_date?: string | null
+          tournament_type: Database["public"]["Enums"]["tournament_type"]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          player_name?: string
+          tournament_date?: string | null
+          tournament_type?: Database["public"]["Enums"]["tournament_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +130,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      tournament_type: "solo" | "duo" | "squad"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +245,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      tournament_type: ["solo", "duo", "squad"],
+    },
   },
 } as const

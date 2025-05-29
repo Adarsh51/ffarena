@@ -1,0 +1,311 @@
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* CSS Custom Properties */
+:root {
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* Light Theme Colors */
+  --primary: #f97316;
+  --primary-hover: #ea580c;
+  --secondary: #6366f1;
+  --accent: #ec4899;
+  --background: #ffffff;
+  --surface: #f8fafc;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --shadow: rgba(0, 0, 0, 0.1);
+  
+  /* Morph Effect Variables */
+  --morph-radius: 20px;
+  --morph-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --morph-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  /* Dark Theme Colors */
+  --background: #0f172a;
+  --surface: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border: #334155;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --morph-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Base Typography */
+* {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+/* Morphing Container Base */
+.morph-container {
+  background: var(--surface);
+  border-radius: var(--morph-radius);
+  box-shadow: var(--morph-shadow);
+  border: 1px solid var(--border);
+  transition: var(--morph-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.morph-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  opacity: 0;
+  transition: var(--morph-transition);
+}
+
+.morph-container:hover::before {
+  opacity: 1;
+}
+
+.morph-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .morph-container:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Morphing Buttons */
+.morph-button {
+  border-radius: 12px;
+  transition: var(--morph-transition);
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+  font-family: var(--font-body);
+}
+
+.morph-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.morph-button:hover::before {
+  left: 100%;
+}
+
+.morph-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.morph-button:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
+}
+
+/* Morphing Inputs */
+.morph-input {
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  transition: var(--morph-transition);
+  font-family: var(--font-body);
+  background: var(--background);
+}
+
+.morph-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  transform: scale(1.02);
+}
+
+.morph-input:hover {
+  border-color: var(--primary);
+}
+
+/* Winner Cards */
+.morph-winner-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: var(--morph-radius);
+  border: 2px solid #f59e0b;
+  transition: var(--morph-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .morph-winner-card {
+  background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+  border-color: #f59e0b;
+}
+
+.morph-winner-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(251, 191, 36, 0.1), transparent);
+  transform: rotate(45deg);
+  transition: var(--morph-transition);
+  opacity: 0;
+}
+
+.morph-winner-card:hover::before {
+  opacity: 1;
+  animation: shimmer 1s ease-in-out;
+}
+
+.morph-winner-card:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(251, 191, 36, 0.3);
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+/* Liquid Morph Animation */
+@keyframes liquidMorph {
+  0%, 100% { border-radius: 20px 20px 20px 20px; }
+  25% { border-radius: 30px 15px 25px 15px; }
+  50% { border-radius: 15px 30px 15px 30px; }
+  75% { border-radius: 25px 20px 30px 20px; }
+}
+
+.morph-container:hover {
+  animation: liquidMorph 3s ease-in-out infinite;
+}
+
+/* Page Load Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.morph-container {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Stagger Animation for Multiple Cards */
+.morph-container:nth-child(1) { animation-delay: 0.1s; }
+.morph-container:nth-child(2) { animation-delay: 0.2s; }
+.morph-container:nth-child(3) { animation-delay: 0.3s; }
+.morph-container:nth-child(4) { animation-delay: 0.4s; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  :root {
+    --morph-radius: 16px;
+  }
+  
+  .morph-container {
+    margin: 0.5rem;
+  }
+  
+  .morph-button {
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.morph-button:focus-visible,
+.morph-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+/* Loading States */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
