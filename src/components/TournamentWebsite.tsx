@@ -94,6 +94,8 @@ const TournamentWebsite = () => {
   const loadPlayerProfile = async () => {
     if (!user) return;
     
+    console.log('Loading profile for user:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('players')
@@ -101,14 +103,19 @@ const TournamentWebsite = () => {
         .eq('clerk_user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading player profile:', error);
+        throw error;
+      }
 
       if (data) {
+        console.log('Found existing player:', data);
         setPlayerProfile(data);
         setIsProfileComplete(!!(data.in_game_name && data.free_fire_uid));
         setInGameName(data.in_game_name || '');
         setFreeFireUID(data.free_fire_uid || '');
       } else {
+        console.log('No existing player found, creating new one');
         // Create new player record
         const newPlayer = {
           clerk_user_id: user.id,
@@ -124,16 +131,33 @@ const TournamentWebsite = () => {
           .select()
           .single();
 
-        if (createError) throw createError;
+        if (createError) {
+          console.error('Error creating player:', createError);
+          
+          // Handle RLS error during creation
+          if (createError.code === '42501') {
+            toast({
+              title: "Setup Required",
+              description: "Account setup is temporarily unavailable. Please contact support.",
+              variant: "destructive"
+            });
+            return;
+          }
+          throw createError;
+        }
+        
+        console.log('Created new player:', created);
         setPlayerProfile(created);
       }
     } catch (error) {
-      console.error('Error loading player profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load player profile",
-        variant: "destructive"
-      });
+      console.error('Error in loadPlayerProfile:', error);
+      if (error.code !== '42501') {
+        toast({
+          title: "Error",
+          description: "Failed to load player profile. Please refresh the page.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -174,10 +198,21 @@ const TournamentWebsite = () => {
 
   // Save player profile
   const savePlayerProfile = async () => {
-    if (!playerProfile || !inGameName || !freeFireUID) {
+    console.log('Attempting to save profile:', { inGameName, freeFireUID, playerProfile });
+    
+    if (!inGameName.trim() || !freeFireUID.trim()) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!playerProfile) {
+      toast({
+        title: "Error",
+        description: "Player profile not found. Please refresh the page.",
         variant: "destructive"
       });
       return;
@@ -187,13 +222,16 @@ const TournamentWebsite = () => {
       const { error } = await supabase
         .from('players')
         .update({
-          in_game_name: inGameName,
-          free_fire_uid: freeFireUID,
+          in_game_name: inGameName.trim(),
+          free_fire_uid: freeFireUID.trim(),
           updated_at: new Date().toISOString()
         })
         .eq('id', playerProfile.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
 
       setIsProfileComplete(true);
       toast({
@@ -204,11 +242,21 @@ const TournamentWebsite = () => {
       await loadPlayerProfile();
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save profile",
-        variant: "destructive"
-      });
+      
+      // Handle specific RLS error
+      if (error.code === '42501') {
+        toast({
+          title: "Permission Error",
+          description: "Unable to save profile due to security settings. Please contact support.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save profile. Please try again.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
