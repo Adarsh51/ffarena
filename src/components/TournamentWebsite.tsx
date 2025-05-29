@@ -404,6 +404,15 @@ const TournamentWebsite = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  // Handler functions for Select components
+  const handleTournamentTypeChange = (value: string) => {
+    setTournamentType(value as TournamentType | '');
+  };
+
+  const handleNewWinnerTypeChange = (value: string) => {
+    setNewWinnerType(value as TournamentType | '');
+  };
+
   return (
     <div className={`min-h-screen transition-all duration-500 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-purple-50'}`}>
       {/* Header */}
@@ -549,7 +558,7 @@ const TournamentWebsite = () => {
                     </div>
                     <div>
                       <Label htmlFor="tournamentType">Tournament Type</Label>
-                      <Select value={tournamentType} onValueChange={setTournamentType}>
+                      <Select value={tournamentType} onValueChange={handleTournamentTypeChange}>
                         <SelectTrigger className="morph-input">
                           <SelectValue placeholder="Select tournament type" />
                         </SelectTrigger>
@@ -697,7 +706,7 @@ const TournamentWebsite = () => {
                       </div>
                       <div>
                         <Label>Tournament Type</Label>
-                        <Select value={newWinnerType} onValueChange={setNewWinnerType}>
+                        <Select value={newWinnerType} onValueChange={handleNewWinnerTypeChange}>
                           <SelectTrigger className="morph-input">
                             <SelectValue placeholder="Select tournament type" />
                           </SelectTrigger>
