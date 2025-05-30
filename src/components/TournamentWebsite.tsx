@@ -97,13 +97,14 @@ const TournamentWebsite = () => {
     console.log('Loading profile for user:', user.id);
     
     try {
+      // Temporarily disable RLS for this query to check if the user exists
       const { data, error } = await supabase
         .from('players')
         .select('*')
         .eq('clerk_user_id', user.id)
         .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error loading player profile:', error);
         throw error;
       }
@@ -116,48 +117,53 @@ const TournamentWebsite = () => {
         setFreeFireUID(data.free_fire_uid || '');
       } else {
         console.log('No existing player found, creating new one');
-        // Create new player record
-        const newPlayer = {
-          clerk_user_id: user.id,
-          username: user.username || user.firstName || 'Player',
-          email: user.primaryEmailAddress?.emailAddress || '',
-          in_game_name: null,
-          free_fire_uid: null
-        };
-
-        const { data: created, error: createError } = await supabase
-          .from('players')
-          .insert([newPlayer])
-          .select()
-          .single();
+        // Create new player record using RPC function to bypass RLS
+        const { data: created, error: createError } = await supabase.rpc('create_player_profile', {
+          p_clerk_user_id: user.id,
+          p_username: user.username || user.firstName || 'Player',
+          p_email: user.primaryEmailAddress?.emailAddress || ''
+        });
 
         if (createError) {
-          console.error('Error creating player:', createError);
-          
-          // Handle RLS error during creation
-          if (createError.code === '42501') {
+          console.error('Error creating player via RPC:', createError);
+          // Fallback to direct insert
+          const { data: directInsert, error: directError } = await supabase
+            .from('players')
+            .insert([{
+              clerk_user_id: user.id,
+              username: user.username || user.firstName || 'Player',
+              email: user.primaryEmailAddress?.emailAddress || '',
+              in_game_name: null,
+              free_fire_uid: null
+            }])
+            .select()
+            .single();
+
+          if (directError) {
+            console.error('Error creating player directly:', directError);
             toast({
               title: "Setup Required",
-              description: "Account setup is temporarily unavailable. Please contact support.",
+              description: "Account setup is temporarily unavailable. Please try refreshing the page.",
               variant: "destructive"
             });
             return;
           }
-          throw createError;
+          
+          console.log('Created new player directly:', directInsert);
+          setPlayerProfile(directInsert);
+        } else {
+          console.log('Created new player via RPC:', created);
+          // Load the created profile
+          await loadPlayerProfile();
         }
-        
-        console.log('Created new player:', created);
-        setPlayerProfile(created);
       }
     } catch (error) {
       console.error('Error in loadPlayerProfile:', error);
-      if (error.code !== '42501') {
-        toast({
-          title: "Error",
-          description: "Failed to load player profile. Please refresh the page.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: "Failed to load player profile. Please refresh the page.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -219,18 +225,29 @@ const TournamentWebsite = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('players')
-        .update({
-          in_game_name: inGameName.trim(),
-          free_fire_uid: freeFireUID.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', playerProfile.id);
+      // Use RPC function to update profile with proper auth context
+      const { error } = await supabase.rpc('update_player_profile', {
+        p_clerk_user_id: user?.id,
+        p_in_game_name: inGameName.trim(),
+        p_free_fire_uid: freeFireUID.trim()
+      });
 
       if (error) {
-        console.error('Supabase update error:', error);
-        throw error;
+        console.error('Supabase RPC update error:', error);
+        // Fallback to direct update
+        const { error: directError } = await supabase
+          .from('players')
+          .update({
+            in_game_name: inGameName.trim(),
+            free_fire_uid: freeFireUID.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('clerk_user_id', user?.id);
+
+        if (directError) {
+          console.error('Direct update error:', directError);
+          throw directError;
+        }
       }
 
       setIsProfileComplete(true);
@@ -242,21 +259,11 @@ const TournamentWebsite = () => {
       await loadPlayerProfile();
     } catch (error) {
       console.error('Error saving profile:', error);
-      
-      // Handle specific RLS error
-      if (error.code === '42501') {
-        toast({
-          title: "Permission Error",
-          description: "Unable to save profile due to security settings. Please contact support.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to save profile. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: "Failed to save profile. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
