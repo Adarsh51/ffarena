@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,7 +60,6 @@ const TournamentWebsite = () => {
   
   // Modal states
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   
   // Admin states
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -97,14 +97,13 @@ const TournamentWebsite = () => {
     console.log('Loading profile for user:', user.id);
     
     try {
-      // Temporarily disable RLS for this query to check if the user exists
       const { data, error } = await supabase
         .from('players')
         .select('*')
         .eq('clerk_user_id', user.id)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error loading player profile:', error);
         throw error;
       }
@@ -117,45 +116,30 @@ const TournamentWebsite = () => {
         setFreeFireUID(data.free_fire_uid || '');
       } else {
         console.log('No existing player found, creating new one');
-        // Create new player record using RPC function to bypass RLS
-        const { data: created, error: createError } = await supabase.rpc('create_player_profile', {
-          p_clerk_user_id: user.id,
-          p_username: user.username || user.firstName || 'Player',
-          p_email: user.primaryEmailAddress?.emailAddress || ''
-        });
+        const { data: created, error: createError } = await supabase
+          .from('players')
+          .insert([{
+            clerk_user_id: user.id,
+            username: user.username || user.firstName || 'Player',
+            email: user.primaryEmailAddress?.emailAddress || '',
+            in_game_name: null,
+            free_fire_uid: null
+          }])
+          .select()
+          .single();
 
         if (createError) {
-          console.error('Error creating player via RPC:', createError);
-          // Fallback to direct insert
-          const { data: directInsert, error: directError } = await supabase
-            .from('players')
-            .insert([{
-              clerk_user_id: user.id,
-              username: user.username || user.firstName || 'Player',
-              email: user.primaryEmailAddress?.emailAddress || '',
-              in_game_name: null,
-              free_fire_uid: null
-            }])
-            .select()
-            .single();
-
-          if (directError) {
-            console.error('Error creating player directly:', directError);
-            toast({
-              title: "Setup Required",
-              description: "Account setup is temporarily unavailable. Please try refreshing the page.",
-              variant: "destructive"
-            });
-            return;
-          }
-          
-          console.log('Created new player directly:', directInsert);
-          setPlayerProfile(directInsert);
-        } else {
-          console.log('Created new player via RPC:', created);
-          // Load the created profile
-          await loadPlayerProfile();
+          console.error('Error creating player:', createError);
+          toast({
+            title: "Setup Required",
+            description: "Account setup is temporarily unavailable. Please try refreshing the page.",
+            variant: "destructive"
+          });
+          return;
         }
+        
+        console.log('Created new player:', created);
+        setPlayerProfile(created);
       }
     } catch (error) {
       console.error('Error in loadPlayerProfile:', error);
@@ -196,7 +180,7 @@ const TournamentWebsite = () => {
       data?.forEach(setting => {
         settingsObj[setting.setting_key] = setting.setting_value;
       });
-      setSettings(settingsObj);
+      setSettings(prev => ({ ...prev, ...settingsObj }));
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -225,29 +209,18 @@ const TournamentWebsite = () => {
     }
 
     try {
-      // Use RPC function to update profile with proper auth context
-      const { error } = await supabase.rpc('update_player_profile', {
-        p_clerk_user_id: user?.id,
-        p_in_game_name: inGameName.trim(),
-        p_free_fire_uid: freeFireUID.trim()
-      });
+      const { error } = await supabase
+        .from('players')
+        .update({
+          in_game_name: inGameName.trim(),
+          free_fire_uid: freeFireUID.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('clerk_user_id', user?.id);
 
       if (error) {
-        console.error('Supabase RPC update error:', error);
-        // Fallback to direct update
-        const { error: directError } = await supabase
-          .from('players')
-          .update({
-            in_game_name: inGameName.trim(),
-            free_fire_uid: freeFireUID.trim(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('clerk_user_id', user?.id);
-
-        if (directError) {
-          console.error('Direct update error:', directError);
-          throw directError;
-        }
+        console.error('Update error:', error);
+        throw error;
       }
 
       setIsProfileComplete(true);
@@ -278,7 +251,6 @@ const TournamentWebsite = () => {
       return;
     }
 
-    // Open payment modal directly
     setIsPaymentModalOpen(true);
   };
 
@@ -377,8 +349,7 @@ const TournamentWebsite = () => {
     try {
       const { error } = await supabase
         .from('settings')
-        .update({ setting_value: value, updated_at: new Date().toISOString() })
-        .eq('setting_key', key);
+        .upsert({ setting_key: key, setting_value: value, updated_at: new Date().toISOString() });
 
       if (error) throw error;
       
@@ -461,11 +432,11 @@ const TournamentWebsite = () => {
 
   // Handler functions for Select components
   const handleTournamentTypeChange = (value: string) => {
-    setTournamentType(value as TournamentType | '');
+    setTournamentType(value as TournamentType);
   };
 
   const handleNewWinnerTypeChange = (value: string) => {
-    setNewWinnerType(value as TournamentType | '');
+    setNewWinnerType(value as TournamentType);
   };
 
   return (

@@ -127,7 +127,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_valid_clerk_user: {
+        Args: { clerk_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       tournament_type: "solo" | "duo" | "squad"
