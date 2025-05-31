@@ -69,7 +69,30 @@ h1, h2, h3, h4, h5, h6 {
   transition: var(--morph-transition);
 }
 
-/* Only apply hover effects on non-touch devices */
+/* Disable morph animations on modal content to prevent stuttering */
+[data-radix-popper-content-wrapper] .morph-container,
+[role="dialog"] .morph-container,
+.morph-container[data-state="open"],
+.morph-container[data-state="closed"] {
+  animation: none !important;
+  transform: none !important;
+}
+
+[data-radix-popper-content-wrapper] .morph-container::before,
+[role="dialog"] .morph-container::before,
+.morph-container[data-state="open"]::before,
+.morph-container[data-state="closed"]::before {
+  display: none;
+}
+
+[data-radix-popper-content-wrapper] .morph-container:hover,
+[role="dialog"] .morph-container:hover {
+  transform: none !important;
+  animation: none !important;
+  box-shadow: var(--morph-shadow) !important;
+}
+
+/* Only apply hover effects on non-touch devices and not in modals */
 @media (hover: hover) and (pointer: fine) {
   .morph-container:hover::before {
     opacity: 1;
@@ -85,7 +108,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Morphing Buttons - Fixed for mobile */
+/* Morphing Buttons - Fixed for mobile and modals */
 .morph-button {
   border-radius: 12px;
   transition: var(--morph-transition);
@@ -106,7 +129,24 @@ h1, h2, h3, h4, h5, h6 {
   transition: left 0.5s ease;
 }
 
-/* Only apply hover effects on non-touch devices */
+/* Disable button animations in modals to prevent stuttering */
+[data-radix-popper-content-wrapper] .morph-button,
+[role="dialog"] .morph-button {
+  overflow: visible;
+}
+
+[data-radix-popper-content-wrapper] .morph-button::before,
+[role="dialog"] .morph-button::before {
+  display: none;
+}
+
+[data-radix-popper-content-wrapper] .morph-button:hover,
+[role="dialog"] .morph-button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Only apply hover effects on non-touch devices and not in modals */
 @media (hover: hover) and (pointer: fine) {
   .morph-button:hover::before {
     left: 100%;
@@ -123,6 +163,12 @@ h1, h2, h3, h4, h5, h6 {
   transition: transform 0.1s ease;
 }
 
+/* Override active state in modals */
+[data-radix-popper-content-wrapper] .morph-button:active,
+[role="dialog"] .morph-button:active {
+  transform: none;
+}
+
 /* Morphing Inputs */
 .morph-input {
   border-radius: 12px;
@@ -137,7 +183,13 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
-/* Only apply hover scale on non-touch devices */
+/* Disable input scaling in modals */
+[data-radix-popper-content-wrapper] .morph-input:focus,
+[role="dialog"] .morph-input:focus {
+  transform: none;
+}
+
+/* Only apply hover scale on non-touch devices and not in modals */
 @media (hover: hover) and (pointer: fine) {
   .morph-input:focus {
     transform: scale(1.02);
@@ -145,6 +197,11 @@ h1, h2, h3, h4, h5, h6 {
   
   .morph-input:hover {
     border-color: var(--primary);
+  }
+  
+  [data-radix-popper-content-wrapper] .morph-input:hover,
+  [role="dialog"] .morph-input:hover {
+    transform: none;
   }
 }
 
@@ -176,7 +233,19 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0;
 }
 
-/* Only apply hover effects on non-touch devices */
+/* Disable winner card animations in modals */
+[data-radix-popper-content-wrapper] .morph-winner-card,
+[role="dialog"] .morph-winner-card {
+  transform: none !important;
+  animation: none !important;
+}
+
+[data-radix-popper-content-wrapper] .morph-winner-card::before,
+[role="dialog"] .morph-winner-card::before {
+  display: none;
+}
+
+/* Only apply hover effects on non-touch devices and not in modals */
 @media (hover: hover) and (pointer: fine) {
   .morph-winner-card:hover::before {
     opacity: 1;
@@ -195,7 +264,7 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }
 
-/* Liquid Morph Animation - Disabled on mobile */
+/* Liquid Morph Animation - Disabled on mobile and modals */
 @keyframes liquidMorph {
   0%, 100% { border-radius: 20px 20px 20px 20px; }
   25% { border-radius: 30px 15px 25px 15px; }
@@ -203,9 +272,9 @@ h1, h2, h3, h4, h5, h6 {
   75% { border-radius: 25px 20px 30px 20px; }
 }
 
-/* Only apply liquid morph on desktop */
+/* Only apply liquid morph on desktop and not in modals */
 @media (hover: hover) and (pointer: fine) and (min-width: 768px) {
-  .morph-container:hover {
+  .morph-container:hover:not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) {
     animation: liquidMorph 3s ease-in-out infinite;
   }
 }
@@ -226,11 +295,17 @@ h1, h2, h3, h4, h5, h6 {
   animation: fadeInUp 0.6s ease-out;
 }
 
-/* Stagger Animation for Multiple Cards */
-.morph-container:nth-child(1) { animation-delay: 0.1s; }
-.morph-container:nth-child(2) { animation-delay: 0.2s; }
-.morph-container:nth-child(3) { animation-delay: 0.3s; }
-.morph-container:nth-child(4) { animation-delay: 0.4s; }
+/* Disable fade in animation for modals */
+[data-radix-popper-content-wrapper] .morph-container,
+[role="dialog"] .morph-container {
+  animation: none;
+}
+
+/* Stagger Animation for Multiple Cards - but not in modals */
+.morph-container:nth-child(1):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.1s; }
+.morph-container:nth-child(2):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.2s; }
+.morph-container:nth-child(3):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.3s; }
+.morph-container:nth-child(4):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.4s; }
 
 /* Responsive Design - Enhanced */
 @media (max-width: 768px) {
@@ -344,14 +419,14 @@ html {
   background-clip: text;
 }
 
-/* Floating Animation - Disabled on mobile */
+/* Floating Animation - Disabled on mobile and modals */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .float-animation {
+  .float-animation:not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) {
     animation: float 3s ease-in-out infinite;
   }
 }
@@ -412,4 +487,26 @@ html {
     transform: none;
     animation: none;
   }
+}
+
+/* Additional Modal Stability Rules */
+[data-radix-popper-content-wrapper],
+[role="dialog"] {
+  pointer-events: auto;
+}
+
+[data-radix-popper-content-wrapper] *,
+[role="dialog"] * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat;
+  -webkit-transform-style: flat;
+}
+
+/* Ensure smooth modal interactions */
+[data-radix-popper-content-wrapper] .morph-container,
+[role="dialog"] .morph-container {
+  will-change: auto;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
