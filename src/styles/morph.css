@@ -46,7 +46,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-/* Morphing Container Base */
+/* Morphing Container Base - Fixed for mobile */
 .morph-container {
   background: var(--surface);
   border-radius: var(--morph-radius);
@@ -69,20 +69,23 @@ h1, h2, h3, h4, h5, h6 {
   transition: var(--morph-transition);
 }
 
-.morph-container:hover::before {
-  opacity: 1;
+/* Only apply hover effects on non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .morph-container:hover::before {
+    opacity: 1;
+  }
+
+  .morph-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  [data-theme="dark"] .morph-container:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
 }
 
-.morph-container:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="dark"] .morph-container:hover {
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-/* Morphing Buttons */
+/* Morphing Buttons - Fixed for mobile */
 .morph-button {
   border-radius: 12px;
   transition: var(--morph-transition);
@@ -103,13 +106,16 @@ h1, h2, h3, h4, h5, h6 {
   transition: left 0.5s ease;
 }
 
-.morph-button:hover::before {
-  left: 100%;
-}
+/* Only apply hover effects on non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .morph-button:hover::before {
+    left: 100%;
+  }
 
-.morph-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  .morph-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
 }
 
 .morph-button:active {
@@ -129,14 +135,20 @@ h1, h2, h3, h4, h5, h6 {
 .morph-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-  transform: scale(1.02);
 }
 
-.morph-input:hover {
-  border-color: var(--primary);
+/* Only apply hover scale on non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .morph-input:focus {
+    transform: scale(1.02);
+  }
+  
+  .morph-input:hover {
+    border-color: var(--primary);
+  }
 }
 
-/* Winner Cards */
+/* Winner Cards - Fixed animations */
 .morph-winner-card {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   border-radius: var(--morph-radius);
@@ -164,14 +176,17 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0;
 }
 
-.morph-winner-card:hover::before {
-  opacity: 1;
-  animation: shimmer 1s ease-in-out;
-}
+/* Only apply hover effects on non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .morph-winner-card:hover::before {
+    opacity: 1;
+    animation: shimmer 1s ease-in-out;
+  }
 
-.morph-winner-card:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 12px 30px rgba(251, 191, 36, 0.3);
+  .morph-winner-card:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(251, 191, 36, 0.3);
+  }
 }
 
 /* Shimmer Animation */
@@ -180,7 +195,7 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }
 
-/* Liquid Morph Animation */
+/* Liquid Morph Animation - Disabled on mobile */
 @keyframes liquidMorph {
   0%, 100% { border-radius: 20px 20px 20px 20px; }
   25% { border-radius: 30px 15px 25px 15px; }
@@ -188,8 +203,11 @@ h1, h2, h3, h4, h5, h6 {
   75% { border-radius: 25px 20px 30px 20px; }
 }
 
-.morph-container:hover {
-  animation: liquidMorph 3s ease-in-out infinite;
+/* Only apply liquid morph on desktop */
+@media (hover: hover) and (pointer: fine) and (min-width: 768px) {
+  .morph-container:hover {
+    animation: liquidMorph 3s ease-in-out infinite;
+  }
 }
 
 /* Page Load Animation */
@@ -214,18 +232,54 @@ h1, h2, h3, h4, h5, h6 {
 .morph-container:nth-child(3) { animation-delay: 0.3s; }
 .morph-container:nth-child(4) { animation-delay: 0.4s; }
 
-/* Responsive Design */
+/* Responsive Design - Enhanced */
 @media (max-width: 768px) {
   :root {
     --morph-radius: 16px;
+    --morph-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
   
   .morph-container {
-    margin: 0.5rem;
+    margin: 0.5rem 0;
+    border-radius: 16px;
   }
   
   .morph-button {
     padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+  }
+  
+  /* Disable complex animations on mobile */
+  .morph-container:hover {
+    animation: none;
+    transform: none;
+  }
+  
+  .morph-winner-card:hover {
+    transform: none;
+    box-shadow: var(--morph-shadow);
+  }
+  
+  /* Improve touch targets */
+  .morph-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --morph-radius: 12px;
+  }
+  
+  .morph-container {
+    margin: 0.25rem 0;
+    padding: 1rem;
+  }
+  
+  .morph-button {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -290,14 +344,16 @@ html {
   background-clip: text;
 }
 
-/* Floating Animation */
+/* Floating Animation - Disabled on mobile */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
 }
 
-.float-animation {
-  animation: float 3s ease-in-out infinite;
+@media (hover: hover) and (pointer: fine) {
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
 }
 
 /* Pulse Animation */
@@ -308,4 +364,52 @@ html {
 
 .pulse-animation {
   animation: pulse 2s ease-in-out infinite;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Improve card spacing */
+  .grid {
+    gap: 0.75rem;
+  }
+  
+  /* Better button spacing */
+  .space-x-2 > * + * {
+    margin-left: 0.5rem;
+  }
+  
+  .space-x-4 > * + * {
+    margin-left: 1rem;
+  }
+  
+  /* Improve form layouts */
+  .grid-cols-1.md\\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-cols-1.md\\:grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .morph-container:hover {
+    transform: none;
+    animation: none;
+  }
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell } from 'lucide-react';
 
@@ -553,39 +552,42 @@ const TournamentWebsite = () => {
 
   return (
     <div className={`min-h-screen transition-all duration-500 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-purple-50'}`}>
-      {/* Header */}
+      {/* Header - Made more mobile-friendly */}
       <header className="morph-container sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-800/80 border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Trophy className="h-8 w-8 text-orange-500" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+            <Trophy className="h-6 w-6 md:h-8 md:w-8 text-orange-500" />
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
               FF Arena
             </h1>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             {/* Theme Toggle */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="morph-button"
+              className="morph-button h-9 w-9 md:h-10 md:w-10"
             >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {isDarkMode ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
             </Button>
 
-            {/* Admin Button */}
+            {/* Admin Button - Mobile optimized */}
             {!isAdminMode && (
               <Dialog open={isAdminModalOpen} onOpenChange={setIsAdminModalOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="morph-button">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Admin
+                  <Button variant="outline" className="morph-button text-sm md:text-base px-2 md:px-4">
+                    <Settings className="h-4 w-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Admin</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="morph-container">
+                <DialogContent className="morph-container w-[95vw] max-w-md mx-auto">
                   <DialogHeader>
                     <DialogTitle>Admin Login</DialogTitle>
+                    <DialogDescription>
+                      Enter the admin password to access the admin panel.
+                    </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleAdminLogin} className="space-y-4">
                     <Input
@@ -594,6 +596,7 @@ const TournamentWebsite = () => {
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
                       className="morph-input"
+                      autoComplete="current-password"
                     />
                     <Button type="submit" className="morph-button w-full">
                       Login
@@ -603,21 +606,25 @@ const TournamentWebsite = () => {
               </Dialog>
             )}
 
-            {/* Authentication */}
+            {/* Authentication - Mobile optimized */}
             {isSignedIn ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-sm font-medium">
-                  Welcome back, {user?.username || user?.firstName}!
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <span className="text-xs md:text-sm font-medium hidden sm:block">
+                  Welcome, {user?.username || user?.firstName}!
                 </span>
                 <UserButton />
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 md:space-x-2">
                 <SignInButton>
-                  <Button variant="outline" className="morph-button">Sign In</Button>
+                  <Button variant="outline" className="morph-button text-xs md:text-sm px-2 md:px-4">
+                    Sign In
+                  </Button>
                 </SignInButton>
                 <SignUpButton>
-                  <Button className="morph-button">Sign Up</Button>
+                  <Button className="morph-button text-xs md:text-sm px-2 md:px-4">
+                    Sign Up
+                  </Button>
                 </SignUpButton>
               </div>
             )}
@@ -625,40 +632,42 @@ const TournamentWebsite = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
         {isSignedIn ? (
           <>
-            {/* Player Profile Section */}
+            {/* Player Profile Section - Mobile optimized */}
             {!isProfileComplete && (
               <Card className="morph-container">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Users className="h-5 w-5" />
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
+                    <Users className="h-4 w-4 md:h-5 md:w-5" />
                     <span>Complete Your Profile</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="inGameName">In-Game Name</Label>
-                    <Input
-                      id="inGameName"
-                      value={inGameName}
-                      onChange={(e) => setInGameName(e.target.value)}
-                      placeholder="Enter your Free Fire in-game name"
-                      className="morph-input"
-                    />
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="inGameName" className="text-sm font-medium">In-Game Name</Label>
+                      <Input
+                        id="inGameName"
+                        value={inGameName}
+                        onChange={(e) => setInGameName(e.target.value)}
+                        placeholder="Enter your Free Fire in-game name"
+                        className="morph-input mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="freeFireUID" className="text-sm font-medium">Free Fire UID</Label>
+                      <Input
+                        id="freeFireUID"
+                        value={freeFireUID}
+                        onChange={(e) => setFreeFireUID(e.target.value)}
+                        placeholder="Enter your Free Fire UID"
+                        className="morph-input mt-1"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="freeFireUID">Free Fire UID</Label>
-                    <Input
-                      id="freeFireUID"
-                      value={freeFireUID}
-                      onChange={(e) => setFreeFireUID(e.target.value)}
-                      placeholder="Enter your Free Fire UID"
-                      className="morph-input"
-                    />
-                  </div>
-                  <Button onClick={savePlayerProfile} className="morph-button">
+                  <Button onClick={savePlayerProfile} className="morph-button w-full">
                     Save Profile
                   </Button>
                 </CardContent>
@@ -812,43 +821,43 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
-            {/* Admin Panel */}
+            {/* Admin Panel - Mobile optimized */}
             {isAdminMode && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Admin Panel</h2>
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <h2 className="text-xl md:text-2xl font-bold">Admin Panel</h2>
                   <Button 
                     onClick={() => setIsAdminMode(false)}
                     variant="outline"
-                    className="morph-button"
+                    className="morph-button w-full sm:w-auto"
                   >
                     Exit Admin
                   </Button>
                 </div>
 
-                {/* Tournament Management */}
+                {/* Tournament Management - Mobile optimized */}
                 <Card className="morph-container">
                   <CardHeader>
-                    <CardTitle>Create Tournament</CardTitle>
+                    <CardTitle className="text-lg md:text-xl">Create Tournament</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Tournament Name</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <Label className="text-sm font-medium">Tournament Name</Label>
                         <Input
                           value={newTournament.name}
                           onChange={(e) => setNewTournament(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="Enter tournament name"
-                          className="morph-input"
+                          className="morph-input mt-1"
                         />
                       </div>
                       <div>
-                        <Label>Tournament Type</Label>
+                        <Label className="text-sm font-medium">Tournament Type</Label>
                         <Select 
                           value={newTournament.type} 
                           onValueChange={(value) => setNewTournament(prev => ({ ...prev, type: value as TournamentType }))}
                         >
-                          <SelectTrigger className="morph-input">
+                          <SelectTrigger className="morph-input mt-1">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
@@ -859,43 +868,43 @@ const TournamentWebsite = () => {
                         </Select>
                       </div>
                       <div>
-                        <Label>Date</Label>
+                        <Label className="text-sm font-medium">Date</Label>
                         <Input
                           type="date"
                           value={newTournament.scheduled_date}
                           onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                          className="morph-input"
+                          className="morph-input mt-1"
                         />
                       </div>
                       <div>
-                        <Label>Time</Label>
+                        <Label className="text-sm font-medium">Time</Label>
                         <Input
                           type="time"
                           value={newTournament.scheduled_time}
                           onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_time: e.target.value }))}
-                          className="morph-input"
+                          className="morph-input mt-1"
                         />
                       </div>
                       <div>
-                        <Label>Max Participants</Label>
+                        <Label className="text-sm font-medium">Max Participants</Label>
                         <Input
                           type="number"
                           value={newTournament.max_participants}
                           onChange={(e) => setNewTournament(prev => ({ ...prev, max_participants: parseInt(e.target.value) }))}
-                          className="morph-input"
+                          className="morph-input mt-1"
                         />
                       </div>
                       <div>
-                        <Label>Prize Pool (₹)</Label>
+                        <Label className="text-sm font-medium">Prize Pool (₹)</Label>
                         <Input
                           type="number"
                           value={newTournament.prize_pool}
                           onChange={(e) => setNewTournament(prev => ({ ...prev, prize_pool: parseInt(e.target.value) }))}
-                          className="morph-input"
+                          className="morph-input mt-1"
                         />
                       </div>
                     </div>
-                    <Button onClick={createTournament} className="morph-button">
+                    <Button onClick={createTournament} className="morph-button w-full">
                       Create Tournament
                     </Button>
                   </CardContent>
@@ -1046,20 +1055,20 @@ const TournamentWebsite = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-20">
-            <Trophy className="h-16 w-16 text-orange-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold mb-4">Welcome to FF Arena</h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">
+          <div className="text-center py-12 md:py-20 px-4">
+            <Trophy className="h-12 w-12 md:h-16 md:w-16 text-orange-500 mx-auto mb-4 md:mb-6" />
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">Welcome to FF Arena</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6 md:mb-8 max-w-md mx-auto text-sm md:text-base">
               Join the ultimate Free Fire tournament platform. Sign up to compete, win prizes, and become a champion!
             </p>
-            <div className="space-x-4">
+            <div className="flex flex-col sm:flex-row gap-4 sm:space-x-4 sm:space-y-0 justify-center">
               <SignUpButton>
-                <Button size="lg" className="morph-button">
+                <Button size="lg" className="morph-button w-full sm:w-auto">
                   Get Started
                 </Button>
               </SignUpButton>
               <SignInButton>
-                <Button variant="outline" size="lg" className="morph-button">
+                <Button variant="outline" size="lg" className="morph-button w-full sm:w-auto">
                   Sign In
                 </Button>
               </SignInButton>
@@ -1068,15 +1077,18 @@ const TournamentWebsite = () => {
         )}
       </main>
 
-      {/* Payment Modal */}
+      {/* Payment Modal - Mobile optimized */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="morph-container max-w-md">
+        <DialogContent className="morph-container w-[95vw] max-w-md mx-auto">
           <DialogHeader>
             <DialogTitle>Complete Payment</DialogTitle>
+            <DialogDescription>
+              Scan the QR code or use the UPI ID to complete your tournament payment.
+            </DialogDescription>
           </DialogHeader>
           <div className="text-center space-y-4">
             <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <p className="font-semibold">Amount: ₹{tournamentType && settings[`entry_fee_${tournamentType}` as keyof GameSettings]}</p>
+              <p className="font-semibold text-lg">Amount: ₹{tournamentType && settings[`entry_fee_${tournamentType}` as keyof GameSettings]}</p>
               <p className="text-sm text-gray-600 dark:text-gray-300">UPI ID: {settings.upi_id}</p>
             </div>
             
@@ -1084,11 +1096,11 @@ const TournamentWebsite = () => {
               <img 
                 src="/placeholder.svg" 
                 alt="Payment QR Code" 
-                className="w-48 h-48 border rounded-lg"
+                className="w-40 h-40 md:w-48 md:h-48 border rounded-lg"
               />
             </div>
             
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300">
               Scan the QR code or use the UPI ID to complete payment
             </p>
             
