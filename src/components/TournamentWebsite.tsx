@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download } from 'lucide-react';
+import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell } from 'lucide-react';
 
 interface Player {
   id: string;
@@ -26,6 +25,25 @@ interface Winner {
   player_name: string;
   tournament_type: string;
   tournament_date: string;
+}
+
+interface Tournament {
+  id: string;
+  name: string;
+  type: 'solo' | 'duo' | 'squad';
+  scheduled_date: string;
+  scheduled_time: string;
+  max_participants: number;
+  entry_fee: number;
+  status: 'upcoming' | 'active' | 'completed';
+  prize_pool: number;
+}
+
+interface PlayerStats {
+  player_id: string;
+  tournaments_played: number;
+  tournaments_won: number;
+  total_earnings: number;
 }
 
 interface GameSettings {
@@ -60,12 +78,15 @@ const TournamentWebsite = () => {
   
   // Modal states
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   
   // Admin states
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [winners, setWinners] = useState<Winner[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [settings, setSettings] = useState<GameSettings>({
     entry_fee_solo: '50',
     entry_fee_duo: '100',
@@ -75,6 +96,16 @@ const TournamentWebsite = () => {
   const [newWinnerName, setNewWinnerName] = useState('');
   const [newWinnerType, setNewWinnerType] = useState<TournamentType | ''>('');
 
+  // New tournament form states
+  const [newTournament, setNewTournament] = useState({
+    name: '',
+    type: '' as TournamentType | '',
+    scheduled_date: '',
+    scheduled_time: '',
+    max_participants: 50,
+    prize_pool: 1000
+  });
+
   // Load theme and data on mount
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
@@ -82,6 +113,8 @@ const TournamentWebsite = () => {
       loadPlayerProfile();
       loadWinners();
       loadSettings();
+      loadTournaments();
+      loadPlayerStats();
     }
   }, [isSignedIn, user, isDarkMode]);
 
@@ -183,6 +216,35 @@ const TournamentWebsite = () => {
       setSettings(prev => ({ ...prev, ...settingsObj }));
     } catch (error) {
       console.error('Error loading settings:', error);
+    }
+  };
+
+  // Load tournaments
+  const loadTournaments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .select('*')
+        .order('scheduled_date', { ascending: true });
+
+      if (error) throw error;
+      setTournaments(data || []);
+    } catch (error) {
+      console.error('Error loading tournaments:', error);
+    }
+  };
+
+  // Load player statistics
+  const loadPlayerStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('player_stats')
+        .select('*');
+
+      if (error) throw error;
+      setPlayerStats(data || []);
+    } catch (error) {
+      console.error('Error loading player stats:', error);
     }
   };
 
@@ -289,9 +351,13 @@ const TournamentWebsite = () => {
   };
 
   // Admin functions
-  const handleAdminLogin = () => {
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (adminPassword === 'Admin123!') {
       setIsAdminMode(true);
+      setIsAdminModalOpen(false);
       loadAllPlayers();
       setAdminPassword('');
       toast({
@@ -464,7 +530,7 @@ const TournamentWebsite = () => {
 
             {/* Admin Button */}
             {!isAdminMode && (
-              <Dialog>
+              <Dialog open={isAdminModalOpen} onOpenChange={setIsAdminModalOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="morph-button">
                     <Settings className="h-4 w-4 mr-2" />
@@ -475,7 +541,7 @@ const TournamentWebsite = () => {
                   <DialogHeader>
                     <DialogTitle>Admin Login</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
+                  <form onSubmit={handleAdminLogin} className="space-y-4">
                     <Input
                       type="password"
                       placeholder="Enter admin password"
@@ -483,10 +549,10 @@ const TournamentWebsite = () => {
                       onChange={(e) => setAdminPassword(e.target.value)}
                       className="morph-input"
                     />
-                    <Button onClick={handleAdminLogin} className="morph-button w-full">
+                    <Button type="submit" className="morph-button w-full">
                       Login
                     </Button>
-                  </div>
+                  </form>
                 </DialogContent>
               </Dialog>
             )}
@@ -553,13 +619,52 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
+            {/* Upcoming Tournaments */}
+            {isProfileComplete && !isAdminMode && (
+              <Card className="morph-container">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Calendar className="h-5 w-5" />
+                    <span>Upcoming Tournaments</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {tournaments.filter(t => t.status === 'upcoming').map((tournament) => (
+                      <div key={tournament.id} className="morph-winner-card p-4">
+                        <h3 className="font-bold text-lg mb-2">{tournament.name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 capitalize mb-1">
+                          {tournament.type} Tournament
+                        </p>
+                        <p className="text-sm mb-1">
+                          <Clock className="h-4 w-4 inline mr-1" />
+                          {new Date(tournament.scheduled_date).toLocaleDateString()} at {tournament.scheduled_time}
+                        </p>
+                        <p className="text-sm mb-1">
+                          <Users className="h-4 w-4 inline mr-1" />
+                          Max: {tournament.max_participants} players
+                        </p>
+                        <p className="text-sm mb-3">
+                          <DollarSign className="h-4 w-4 inline mr-1" />
+                          Prize Pool: ₹{tournament.prize_pool}
+                        </p>
+                        <Button className="morph-button w-full" size="sm">
+                          Register (₹{tournament.entry_fee})
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Tournament Registration */}
             {isProfileComplete && !isAdminMode && (
               <Card className="morph-container">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Trophy className="h-5 w-5" />
-                    <span>Join Tournament</span>
+                    <span>Quick Tournament Join</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -584,7 +689,7 @@ const TournamentWebsite = () => {
                     </div>
                     <div>
                       <Label htmlFor="tournamentType">Tournament Type</Label>
-                      <Select value={tournamentType} onValueChange={handleTournamentTypeChange}>
+                      <Select value={tournamentType} onValueChange={(value) => setTournamentType(value as TournamentType)}>
                         <SelectTrigger className="morph-input">
                           <SelectValue placeholder="Select tournament type" />
                         </SelectTrigger>
@@ -622,6 +727,45 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
+            {/* Player Statistics */}
+            {isProfileComplete && !isAdminMode && playerProfile && (
+              <Card className="morph-container">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    <span>Your Statistics</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(() => {
+                      const stats = playerStats.find(s => s.player_id === playerProfile.id) || {
+                        tournaments_played: 0,
+                        tournaments_won: 0,
+                        total_earnings: 0
+                      };
+                      return (
+                        <>
+                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="text-2xl font-bold text-blue-500">{stats.tournaments_played}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Tournaments Played</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="text-2xl font-bold text-green-500">{stats.tournaments_won}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Tournaments Won</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="text-2xl font-bold text-yellow-500">₹{stats.total_earnings}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Total Earnings</p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Admin Panel */}
             {isAdminMode && (
               <div className="space-y-6">
@@ -635,6 +779,81 @@ const TournamentWebsite = () => {
                     Exit Admin
                   </Button>
                 </div>
+
+                {/* Tournament Management */}
+                <Card className="morph-container">
+                  <CardHeader>
+                    <CardTitle>Create Tournament</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Tournament Name</Label>
+                        <Input
+                          value={newTournament.name}
+                          onChange={(e) => setNewTournament(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Enter tournament name"
+                          className="morph-input"
+                        />
+                      </div>
+                      <div>
+                        <Label>Tournament Type</Label>
+                        <Select 
+                          value={newTournament.type} 
+                          onValueChange={(value) => setNewTournament(prev => ({ ...prev, type: value as TournamentType }))}
+                        >
+                          <SelectTrigger className="morph-input">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="solo">Solo</SelectItem>
+                            <SelectItem value="duo">Duo</SelectItem>
+                            <SelectItem value="squad">Squad</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Date</Label>
+                        <Input
+                          type="date"
+                          value={newTournament.scheduled_date}
+                          onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                          className="morph-input"
+                        />
+                      </div>
+                      <div>
+                        <Label>Time</Label>
+                        <Input
+                          type="time"
+                          value={newTournament.scheduled_time}
+                          onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_time: e.target.value }))}
+                          className="morph-input"
+                        />
+                      </div>
+                      <div>
+                        <Label>Max Participants</Label>
+                        <Input
+                          type="number"
+                          value={newTournament.max_participants}
+                          onChange={(e) => setNewTournament(prev => ({ ...prev, max_participants: parseInt(e.target.value) }))}
+                          className="morph-input"
+                        />
+                      </div>
+                      <div>
+                        <Label>Prize Pool (₹)</Label>
+                        <Input
+                          type="number"
+                          value={newTournament.prize_pool}
+                          onChange={(e) => setNewTournament(prev => ({ ...prev, prize_pool: parseInt(e.target.value) }))}
+                          className="morph-input"
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={createTournament} className="morph-button">
+                      Create Tournament
+                    </Button>
+                  </CardContent>
+                </Card>
 
                 {/* Settings Management */}
                 <Card className="morph-container">
