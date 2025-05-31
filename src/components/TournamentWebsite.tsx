@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -219,10 +220,10 @@ const TournamentWebsite = () => {
     }
   };
 
-  // Load tournaments
+  // Load tournaments - using any type to bypass TypeScript issues until types are regenerated
   const loadTournaments = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tournaments')
         .select('*')
         .order('scheduled_date', { ascending: true });
@@ -234,10 +235,10 @@ const TournamentWebsite = () => {
     }
   };
 
-  // Load player statistics
+  // Load player statistics - using any type to bypass TypeScript issues until types are regenerated
   const loadPlayerStats = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('player_stats')
         .select('*');
 
@@ -245,6 +246,60 @@ const TournamentWebsite = () => {
       setPlayerStats(data || []);
     } catch (error) {
       console.error('Error loading player stats:', error);
+    }
+  };
+
+  // Create new tournament
+  const createTournament = async () => {
+    if (!newTournament.name || !newTournament.type || !newTournament.scheduled_date || !newTournament.scheduled_time) {
+      toast({
+        title: "Error",
+        description: "Please fill in all tournament details",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const entryFeeKey = `entry_fee_${newTournament.type}` as keyof GameSettings;
+      const entryFee = parseInt(settings[entryFeeKey]);
+
+      const { error } = await (supabase as any)
+        .from('tournaments')
+        .insert([{
+          name: newTournament.name,
+          type: newTournament.type,
+          scheduled_date: newTournament.scheduled_date,
+          scheduled_time: newTournament.scheduled_time,
+          max_participants: newTournament.max_participants,
+          entry_fee: entryFee,
+          status: 'upcoming',
+          prize_pool: newTournament.prize_pool
+        }]);
+
+      if (error) throw error;
+
+      setNewTournament({
+        name: '',
+        type: '',
+        scheduled_date: '',
+        scheduled_time: '',
+        max_participants: 50,
+        prize_pool: 1000
+      });
+      
+      await loadTournaments();
+      toast({
+        title: "Success",
+        description: "Tournament created successfully!"
+      });
+    } catch (error) {
+      console.error('Error creating tournament:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create tournament",
+        variant: "destructive"
+      });
     }
   };
 
@@ -350,7 +405,7 @@ const TournamentWebsite = () => {
     }
   };
 
-  // Admin functions
+  // Handle admin login with form submission prevention
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -494,15 +549,6 @@ const TournamentWebsite = () => {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-  };
-
-  // Handler functions for Select components
-  const handleTournamentTypeChange = (value: string) => {
-    setTournamentType(value as TournamentType);
-  };
-
-  const handleNewWinnerTypeChange = (value: string) => {
-    setNewWinnerType(value as TournamentType);
   };
 
   return (
@@ -951,7 +997,7 @@ const TournamentWebsite = () => {
                       </div>
                       <div>
                         <Label>Tournament Type</Label>
-                        <Select value={newWinnerType} onValueChange={handleNewWinnerTypeChange}>
+                        <Select value={newWinnerType} onValueChange={(value) => setNewWinnerType(value as TournamentType)}>
                           <SelectTrigger className="morph-input">
                             <SelectValue placeholder="Select tournament type" />
                           </SelectTrigger>

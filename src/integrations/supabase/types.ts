@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      player_stats: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string | null
+          total_earnings: number
+          tournaments_played: number
+          tournaments_won: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          total_earnings?: number
+          tournaments_played?: number
+          tournaments_won?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          total_earnings?: number
+          tournaments_played?: number
+          tournaments_won?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           clerk_user_id: string
@@ -97,6 +135,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tournaments: {
+        Row: {
+          created_at: string
+          entry_fee: number
+          id: string
+          max_participants: number
+          name: string
+          prize_pool: number
+          scheduled_date: string
+          scheduled_time: string
+          status: string
+          type: Database["public"]["Enums"]["tournament_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entry_fee: number
+          id?: string
+          max_participants?: number
+          name: string
+          prize_pool?: number
+          scheduled_date: string
+          scheduled_time: string
+          status?: string
+          type: Database["public"]["Enums"]["tournament_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entry_fee?: number
+          id?: string
+          max_participants?: number
+          name?: string
+          prize_pool?: number
+          scheduled_date?: string
+          scheduled_time?: string
+          status?: string
+          type?: Database["public"]["Enums"]["tournament_type"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       winners: {
         Row: {
