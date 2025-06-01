@@ -73,7 +73,9 @@ h1, h2, h3, h4, h5, h6 {
 [data-radix-popper-content-wrapper] .morph-container,
 [role="dialog"] .morph-container,
 .morph-container[data-state="open"],
-.morph-container[data-state="closed"] {
+.morph-container[data-state="closed"],
+[data-state="open"] .morph-container,
+[data-state="closed"] .morph-container {
   animation: none !important;
   transform: none !important;
 }
@@ -81,12 +83,16 @@ h1, h2, h3, h4, h5, h6 {
 [data-radix-popper-content-wrapper] .morph-container::before,
 [role="dialog"] .morph-container::before,
 .morph-container[data-state="open"]::before,
-.morph-container[data-state="closed"]::before {
+.morph-container[data-state="closed"]::before,
+[data-state="open"] .morph-container::before,
+[data-state="closed"] .morph-container::before {
   display: none;
 }
 
 [data-radix-popper-content-wrapper] .morph-container:hover,
-[role="dialog"] .morph-container:hover {
+[role="dialog"] .morph-container:hover,
+[data-state="open"] .morph-container:hover,
+[data-state="closed"] .morph-container:hover {
   transform: none !important;
   animation: none !important;
   box-shadow: var(--morph-shadow) !important;
@@ -131,17 +137,23 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Disable button animations in modals to prevent stuttering */
 [data-radix-popper-content-wrapper] .morph-button,
-[role="dialog"] .morph-button {
+[role="dialog"] .morph-button,
+[data-state="open"] .morph-button,
+[data-state="closed"] .morph-button {
   overflow: visible;
 }
 
 [data-radix-popper-content-wrapper] .morph-button::before,
-[role="dialog"] .morph-button::before {
+[role="dialog"] .morph-button::before,
+[data-state="open"] .morph-button::before,
+[data-state="closed"] .morph-button::before {
   display: none;
 }
 
 [data-radix-popper-content-wrapper] .morph-button:hover,
-[role="dialog"] .morph-button:hover {
+[role="dialog"] .morph-button:hover,
+[data-state="open"] .morph-button:hover,
+[data-state="closed"] .morph-button:hover {
   transform: none;
   box-shadow: none;
 }
@@ -165,7 +177,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Override active state in modals */
 [data-radix-popper-content-wrapper] .morph-button:active,
-[role="dialog"] .morph-button:active {
+[role="dialog"] .morph-button:active,
+[data-state="open"] .morph-button:active,
+[data-state="closed"] .morph-button:active {
   transform: none;
 }
 
@@ -185,7 +199,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Disable input scaling in modals */
 [data-radix-popper-content-wrapper] .morph-input:focus,
-[role="dialog"] .morph-input:focus {
+[role="dialog"] .morph-input:focus,
+[data-state="open"] .morph-input:focus,
+[data-state="closed"] .morph-input:focus {
   transform: none;
 }
 
@@ -200,7 +216,9 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   [data-radix-popper-content-wrapper] .morph-input:hover,
-  [role="dialog"] .morph-input:hover {
+  [role="dialog"] .morph-input:hover,
+  [data-state="open"] .morph-input:hover,
+  [data-state="closed"] .morph-input:hover {
     transform: none;
   }
 }
@@ -235,13 +253,17 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Disable winner card animations in modals */
 [data-radix-popper-content-wrapper] .morph-winner-card,
-[role="dialog"] .morph-winner-card {
+[role="dialog"] .morph-winner-card,
+[data-state="open"] .morph-winner-card,
+[data-state="closed"] .morph-winner-card {
   transform: none !important;
   animation: none !important;
 }
 
 [data-radix-popper-content-wrapper] .morph-winner-card::before,
-[role="dialog"] .morph-winner-card::before {
+[role="dialog"] .morph-winner-card::before,
+[data-state="open"] .morph-winner-card::before,
+[data-state="closed"] .morph-winner-card::before {
   display: none;
 }
 
@@ -274,7 +296,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Only apply liquid morph on desktop and not in modals */
 @media (hover: hover) and (pointer: fine) and (min-width: 768px) {
-  .morph-container:hover:not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) {
+  .morph-container:hover:not([data-radix-popper-content-wrapper] *):not([role="dialog"] *):not([data-state="open"] *):not([data-state="closed"] *) {
     animation: liquidMorph 3s ease-in-out infinite;
   }
 }
@@ -291,21 +313,122 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Enhanced Animation Keyframes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation Classes */
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.4s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+/* Delay Classes */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
 .morph-container {
   animation: fadeInUp 0.6s ease-out;
 }
 
 /* Disable fade in animation for modals */
 [data-radix-popper-content-wrapper] .morph-container,
-[role="dialog"] .morph-container {
+[role="dialog"] .morph-container,
+[data-state="open"] .morph-container,
+[data-state="closed"] .morph-container {
   animation: none;
 }
 
 /* Stagger Animation for Multiple Cards - but not in modals */
-.morph-container:nth-child(1):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.1s; }
-.morph-container:nth-child(2):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.2s; }
-.morph-container:nth-child(3):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.3s; }
-.morph-container:nth-child(4):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) { animation-delay: 0.4s; }
+.morph-container:nth-child(1):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *):not([data-state="open"] *):not([data-state="closed"] *) { animation-delay: 0.1s; }
+.morph-container:nth-child(2):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *):not([data-state="open"] *):not([data-state="closed"] *) { animation-delay: 0.2s; }
+.morph-container:nth-child(3):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *):not([data-state="open"] *):not([data-state="closed"] *) { animation-delay: 0.3s; }
+.morph-container:nth-child(4):not([data-radix-popper-content-wrapper] *):not([role="dialog"] *):not([data-state="open"] *):not([data-state="closed"] *) { animation-delay: 0.4s; }
+
+/* Modal Specific Styles */
+[role="dialog"] {
+  backdrop-filter: blur(8px);
+}
+
+[data-state="open"] {
+  animation: fade-in 0.3s ease-out;
+}
+
+[data-state="closed"] {
+  animation: fade-out 0.2s ease-in;
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
 
 /* Responsive Design - Enhanced */
 @media (max-width: 768px) {
@@ -426,7 +549,7 @@ html {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .float-animation:not([data-radix-popper-content-wrapper] *):not([role="dialog"] *) {
+  .float-animation:not([data-radix-popper-content-wrapper] *):not([role="dialog"] *):not([data-state="open"] *):not([data-state="closed"] *) {
     animation: float 3s ease-in-out infinite;
   }
 }
@@ -491,12 +614,16 @@ html {
 
 /* Additional Modal Stability Rules */
 [data-radix-popper-content-wrapper],
-[role="dialog"] {
+[role="dialog"],
+[data-state="open"],
+[data-state="closed"] {
   pointer-events: auto;
 }
 
 [data-radix-popper-content-wrapper] *,
-[role="dialog"] * {
+[role="dialog"] *,
+[data-state="open"] *,
+[data-state="closed"] * {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform-style: flat;
@@ -505,8 +632,32 @@ html {
 
 /* Ensure smooth modal interactions */
 [data-radix-popper-content-wrapper] .morph-container,
-[role="dialog"] .morph-container {
+[role="dialog"] .morph-container,
+[data-state="open"] .morph-container,
+[data-state="closed"] .morph-container {
   will-change: auto;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+}
+
+/* Tournament Card Specific Styles */
+.tournament-card-image {
+  transition: transform 0.3s ease;
+}
+
+.tournament-card:hover .tournament-card-image {
+  transform: scale(1.1);
+}
+
+/* Enhanced gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-bg-orange {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-bg-blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }

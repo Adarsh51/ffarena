@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell } from 'lucide-react';
+import TournamentCard from './TournamentCard';
 
 interface Player {
   id: string;
@@ -105,6 +106,37 @@ const TournamentWebsite = () => {
     max_participants: 50,
     prize_pool: 1000
   });
+
+  // Featured tournament cards data
+  const featuredTournaments = [
+    {
+      title: "Friday Night Battle",
+      type: 'solo' as const,
+      time: "8:00 PM",
+      entryFee: settings.entry_fee_solo,
+      prizePool: "5000",
+      image: "photo-1581092795360-fd1ca04f0952",
+      maxPlayers: 100
+    },
+    {
+      title: "Weekend Warriors",
+      type: 'duo' as const,
+      time: "6:00 PM", 
+      entryFee: settings.entry_fee_duo,
+      prizePool: "10000",
+      image: "photo-1605810230434-7631ac76ec81",
+      maxPlayers: 50
+    },
+    {
+      title: "Squad Championship",
+      type: 'squad' as const,
+      time: "9:00 PM",
+      entryFee: settings.entry_fee_squad,
+      prizePool: "25000",
+      image: "photo-1519389950473-47ba0277781c",
+      maxPlayers: 25
+    }
+  ];
 
   // Load theme and data on mount
   useEffect(() => {
@@ -582,23 +614,25 @@ const TournamentWebsite = () => {
                     <span className="hidden sm:inline">Admin</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="morph-container w-[95vw] max-w-md mx-auto">
+                <DialogContent className="w-[95vw] max-w-md mx-auto animate-fade-in">
                   <DialogHeader>
-                    <DialogTitle>Admin Login</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="animate-slide-in-right">Admin Login</DialogTitle>
+                    <DialogDescription className="animate-fade-in delay-100">
                       Enter the admin password to access the admin panel.
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleAdminLogin} className="space-y-4">
-                    <Input
-                      type="password"
-                      placeholder="Enter admin password"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      className="morph-input"
-                      autoComplete="current-password"
-                    />
-                    <Button type="submit" className="morph-button w-full">
+                  <form onSubmit={handleAdminLogin} className="space-y-4 animate-fade-in delay-200">
+                    <div className="transform transition-all duration-300 hover:scale-105">
+                      <Input
+                        type="password"
+                        placeholder="Enter admin password"
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        className="morph-input"
+                        autoComplete="current-password"
+                      />
+                    </div>
+                    <Button type="submit" className="morph-button w-full transform transition-all duration-300 hover:scale-105">
                       Login
                     </Button>
                   </form>
@@ -674,13 +708,37 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
+            {/* Featured Tournament Cards */}
+            {isProfileComplete && !isAdminMode && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2">Featured Tournaments</h2>
+                  <p className="text-gray-600 dark:text-gray-300">Join the action and compete for amazing prizes!</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {featuredTournaments.map((tournament, index) => (
+                    <div key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                      <TournamentCard
+                        {...tournament}
+                        onRegister={() => {
+                          setTournamentType(tournament.type);
+                          setIsPaymentModalOpen(true);
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Upcoming Tournaments */}
             {isProfileComplete && !isAdminMode && (
               <Card className="morph-container">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Calendar className="h-5 w-5" />
-                    <span>Upcoming Tournaments</span>
+                    <span>Scheduled Tournaments</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1079,32 +1137,37 @@ const TournamentWebsite = () => {
 
       {/* Payment Modal - Mobile optimized */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="morph-container w-[95vw] max-w-md mx-auto">
+        <DialogContent className="w-[95vw] max-w-md mx-auto animate-fade-in">
           <DialogHeader>
-            <DialogTitle>Complete Payment</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="animate-slide-in-right">Complete Payment</DialogTitle>
+            <DialogDescription className="animate-fade-in delay-100">
               Scan the QR code or use the UPI ID to complete your tournament payment.
             </DialogDescription>
           </DialogHeader>
-          <div className="text-center space-y-4">
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div className="text-center space-y-4 animate-fade-in delay-200">
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transform transition-all duration-300 hover:scale-105">
               <p className="font-semibold text-lg">Amount: ₹{tournamentType && settings[`entry_fee_${tournamentType}` as keyof GameSettings]}</p>
               <p className="text-sm text-gray-600 dark:text-gray-300">UPI ID: {settings.upi_id}</p>
             </div>
             
             <div className="flex justify-center">
-              <img 
-                src="/placeholder.svg" 
-                alt="Payment QR Code" 
-                className="w-40 h-40 md:w-48 md:h-48 border rounded-lg"
-              />
+              <div className="transform transition-all duration-300 hover:scale-105">
+                <img 
+                  src="/placeholder.svg" 
+                  alt="Payment QR Code" 
+                  className="w-40 h-40 md:w-48 md:h-48 border rounded-lg shadow-lg"
+                />
+              </div>
             </div>
             
             <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300">
               Scan the QR code or use the UPI ID to complete payment
             </p>
             
-            <Button onClick={handlePaymentComplete} className="morph-button w-full">
+            <Button 
+              onClick={handlePaymentComplete} 
+              className="morph-button w-full transform transition-all duration-300 hover:scale-105"
+            >
               I've Paid
             </Button>
           </div>
