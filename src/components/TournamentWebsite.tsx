@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield } from 'lucide-react';
+import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Edit, Trash2, Search, Filter } from 'lucide-react';
 import TournamentCard from './TournamentCard';
 
 interface Player {
@@ -19,6 +20,16 @@ interface Player {
   in_game_name: string | null;
   free_fire_uid: string | null;
   created_at: string;
+}
+
+interface TournamentRegistration {
+  id: string;
+  player_id: string;
+  tournament_type: string;
+  slot_time: string;
+  payment_status: string;
+  created_at: string;
+  player: Player;
 }
 
 interface Winner {
@@ -85,6 +96,8 @@ const TournamentWebsite = () => {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [tournamentRegistrations, setTournamentRegistrations] = useState<TournamentRegistration[]>([]);
+  const [filteredRegistrations, setFilteredRegistrations] = useState<TournamentRegistration[]>([]);
   const [winners, setWinners] = useState<Winner[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
@@ -97,6 +110,11 @@ const TournamentWebsite = () => {
   const [newWinnerName, setNewWinnerName] = useState('');
   const [newWinnerType, setNewWinnerType] = useState<TournamentType | ''>('');
 
+  // Filter states
+  const [registrationFilter, setRegistrationFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+
   // New tournament form states
   const [newTournament, setNewTournament] = useState({
     name: '',
@@ -107,7 +125,7 @@ const TournamentWebsite = () => {
     prize_pool: 1000
   });
 
-  // Featured tournament cards data - moved to homepage
+  // Featured tournament cards data
   const featuredTournaments = [
     {
       title: "Friday Night Battle",
@@ -182,6 +200,30 @@ const TournamentWebsite = () => {
     localStorage.setItem('ff-arena-theme', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
+  // Filter registrations based on search and filters
+  useEffect(() => {
+    let filtered = tournamentRegistrations;
+
+    if (searchTerm) {
+      filtered = filtered.filter(reg => 
+        reg.player.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reg.player.in_game_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reg.player.free_fire_uid?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reg.player.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (registrationFilter !== 'all') {
+      filtered = filtered.filter(reg => reg.tournament_type === registrationFilter);
+    }
+
+    if (paymentFilter !== 'all') {
+      filtered = filtered.filter(reg => reg.payment_status === paymentFilter);
+    }
+
+    setFilteredRegistrations(filtered);
+  }, [tournamentRegistrations, searchTerm, registrationFilter, paymentFilter]);
+
   // Load player profile from Supabase
   const loadPlayerProfile = async () => {
     if (!user) return;
@@ -240,6 +282,24 @@ const TournamentWebsite = () => {
         description: "Failed to load player profile. Please refresh the page.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Load tournament registrations with player details
+  const loadTournamentRegistrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tournament_registrations')
+        .select(`
+          *,
+          player:players(*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTournamentRegistrations(data || []);
+    } catch (error) {
+      console.error('Error loading tournament registrations:', error);
     }
   };
 
@@ -472,6 +532,7 @@ const TournamentWebsite = () => {
       setIsAdminMode(true);
       setIsAdminModalOpen(false);
       loadAllPlayers();
+      loadTournamentRegistrations();
       setAdminPassword('');
       toast({
         title: "Success",
@@ -607,6 +668,83 @@ const TournamentWebsite = () => {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+  };
+
+  // Export registrations as CSV
+  const exportRegistrationsCSV = () => {
+    const csvContent = [
+      ['Player Name', 'Email', 'In-Game Name', 'Free Fire UID', 'Tournament Type', 'Slot Time', 'Payment Status', 'Registration Date'].join(','),
+      ...filteredRegistrations.map(reg => [
+        reg.player.username,
+        reg.player.email,
+        reg.player.in_game_name || '',
+        reg.player.free_fire_uid || '',
+        reg.tournament_type,
+        reg.slot_time,
+        reg.payment_status,
+        new Date(reg.created_at).toLocaleDateString()
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tournament-registrations.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Update payment status
+  const updatePaymentStatus = async (registrationId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('tournament_registrations')
+        .update({ payment_status: status })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+
+      await loadTournamentRegistrations();
+      toast({
+        title: "Success",
+        description: `Payment status updated to ${status}`,
+      });
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update payment status",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Delete registration
+  const deleteRegistration = async (registrationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tournament_registrations')
+        .delete()
+        .eq('id', registrationId);
+
+      if (error) throw error;
+
+      await loadTournamentRegistrations();
+      toast({
+        title: "Success",
+        description: "Registration deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting registration:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete registration",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -934,6 +1072,13 @@ const TournamentWebsite = () => {
                   </Card>
                   <Card className="morph-container">
                     <CardContent className="p-4 text-center">
+                      <FileText className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold">{tournamentRegistrations.length}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Registrations</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="morph-container">
+                    <CardContent className="p-4 text-center">
                       <Calendar className="h-8 w-8 text-green-500 mx-auto mb-2" />
                       <p className="text-2xl font-bold">{tournaments.length}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-300">Total Tournaments</p>
@@ -946,14 +1091,174 @@ const TournamentWebsite = () => {
                       <p className="text-sm text-gray-600 dark:text-gray-300">Total Winners</p>
                     </CardContent>
                   </Card>
-                  <Card className="morph-container">
-                    <CardContent className="p-4 text-center">
-                      <BarChart3 className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold">{tournaments.filter(t => t.status === 'active').length}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Active Tournaments</p>
-                    </CardContent>
-                  </Card>
                 </div>
+
+                {/* Tournament Registrations Management */}
+                <Card className="morph-container">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-5 w-5" />
+                        <span>Tournament Registrations ({filteredRegistrations.length})</span>
+                      </div>
+                      <Button onClick={exportRegistrationsCSV} variant="outline" className="morph-button">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export CSV
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Filters */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label>Search Players</Label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            placeholder="Search by name, email, UID..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="morph-input pl-10"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Tournament Type</Label>
+                        <Select value={registrationFilter} onValueChange={setRegistrationFilter}>
+                          <SelectTrigger className="morph-input">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="solo">Solo</SelectItem>
+                            <SelectItem value="duo">Duo</SelectItem>
+                            <SelectItem value="squad">Squad</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Payment Status</Label>
+                        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                          <SelectTrigger className="morph-input">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="failed">Failed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <Button 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setRegistrationFilter('all');
+                            setPaymentFilter('all');
+                          }}
+                          variant="outline" 
+                          className="morph-button w-full"
+                        >
+                          <Filter className="h-4 w-4 mr-2" />
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Registrations Table */}
+                    <div className="rounded-md border max-h-96 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Player Info</TableHead>
+                            <TableHead>Tournament</TableHead>
+                            <TableHead>Slot Time</TableHead>
+                            <TableHead>Payment Status</TableHead>
+                            <TableHead>Registration Date</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredRegistrations.map((registration) => (
+                            <TableRow key={registration.id}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{registration.player.username}</p>
+                                  <p className="text-sm text-gray-600">{registration.player.email}</p>
+                                  <p className="text-sm text-gray-500">
+                                    IGN: {registration.player.in_game_name || 'N/A'}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    UID: {registration.player.free_fire_uid || 'N/A'}
+                                  </p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  registration.tournament_type === 'solo' ? 'bg-blue-100 text-blue-800' :
+                                  registration.tournament_type === 'duo' ? 'bg-green-100 text-green-800' :
+                                  'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {registration.tournament_type.toUpperCase()}
+                                </span>
+                              </TableCell>
+                              <TableCell>{registration.slot_time}</TableCell>
+                              <TableCell>
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  registration.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  registration.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {registration.payment_status === 'completed' && <CheckCircle className="w-3 h-3 mr-1" />}
+                                  {registration.payment_status === 'failed' && <XCircle className="w-3 h-3 mr-1" />}
+                                  {registration.payment_status}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(registration.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  {registration.payment_status === 'pending' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => updatePaymentStatus(registration.id, 'completed')}
+                                        className="bg-green-500 hover:bg-green-600"
+                                      >
+                                        <CheckCircle className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => updatePaymentStatus(registration.id, 'failed')}
+                                      >
+                                        <XCircle className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => deleteRegistration(registration.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {filteredRegistrations.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          No registrations found matching your criteria.
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Tournament Management - Enhanced */}
                 <Card className="morph-container">
