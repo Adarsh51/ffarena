@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell } from 'lucide-react';
+import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield } from 'lucide-react';
 import TournamentCard from './TournamentCard';
 
 interface Player {
@@ -107,7 +107,7 @@ const TournamentWebsite = () => {
     prize_pool: 1000
   });
 
-  // Featured tournament cards data
+  // Featured tournament cards data - moved to homepage
   const featuredTournaments = [
     {
       title: "Friday Night Battle",
@@ -135,6 +135,33 @@ const TournamentWebsite = () => {
       prizePool: "25000",
       image: "photo-1519389950473-47ba0277781c",
       maxPlayers: 25
+    },
+    {
+      title: "Elite Solo Challenge",
+      type: 'solo' as const,
+      time: "7:00 PM",
+      entryFee: settings.entry_fee_solo,
+      prizePool: "3000",
+      image: "photo-1488590528505-98d2b5aba04b",
+      maxPlayers: 80
+    },
+    {
+      title: "Dynamic Duo Derby",
+      type: 'duo' as const,
+      time: "5:00 PM",
+      entryFee: settings.entry_fee_duo,
+      prizePool: "8000",
+      image: "photo-1526374965328-7f61d4dc18c5",
+      maxPlayers: 40
+    },
+    {
+      title: "Squad Legends",
+      type: 'squad' as const,
+      time: "10:00 PM",
+      entryFee: settings.entry_fee_squad,
+      prizePool: "15000",
+      image: "photo-1487058792275-0ad4aaf24ca7",
+      maxPlayers: 30
     }
   ];
 
@@ -614,15 +641,15 @@ const TournamentWebsite = () => {
                     <span className="hidden sm:inline">Admin</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="w-[95vw] max-w-md mx-auto animate-fade-in">
+                <DialogContent className="w-[95vw] max-w-md mx-auto">
                   <DialogHeader>
-                    <DialogTitle className="animate-slide-in-right">Admin Login</DialogTitle>
-                    <DialogDescription className="animate-fade-in delay-100">
+                    <DialogTitle>Admin Login</DialogTitle>
+                    <DialogDescription>
                       Enter the admin password to access the admin panel.
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleAdminLogin} className="space-y-4 animate-fade-in delay-200">
-                    <div className="transform transition-all duration-300 hover:scale-105">
+                  <form onSubmit={handleAdminLogin} className="space-y-4">
+                    <div>
                       <Input
                         type="password"
                         placeholder="Enter admin password"
@@ -632,7 +659,7 @@ const TournamentWebsite = () => {
                         autoComplete="current-password"
                       />
                     </div>
-                    <Button type="submit" className="morph-button w-full transform transition-all duration-300 hover:scale-105">
+                    <Button type="submit" className="morph-button w-full">
                       Login
                     </Button>
                   </form>
@@ -708,7 +735,7 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
-            {/* Featured Tournament Cards */}
+            {/* Featured Tournament Cards - Now on homepage */}
             {isProfileComplete && !isAdminMode && (
               <div className="space-y-6">
                 <div className="text-center">
@@ -879,11 +906,14 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
-            {/* Admin Panel - Mobile optimized */}
+            {/* Enhanced Admin Panel */}
             {isAdminMode && (
               <div className="space-y-4 md:space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h2 className="text-xl md:text-2xl font-bold">Admin Panel</h2>
+                  <h2 className="text-xl md:text-2xl font-bold flex items-center space-x-2">
+                    <Shield className="h-6 w-6 text-blue-500" />
+                    <span>Admin Dashboard</span>
+                  </h2>
                   <Button 
                     onClick={() => setIsAdminMode(false)}
                     variant="outline"
@@ -893,10 +923,45 @@ const TournamentWebsite = () => {
                   </Button>
                 </div>
 
-                {/* Tournament Management - Mobile optimized */}
+                {/* Admin Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card className="morph-container">
+                    <CardContent className="p-4 text-center">
+                      <Users className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold">{allPlayers.length}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Players</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="morph-container">
+                    <CardContent className="p-4 text-center">
+                      <Calendar className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold">{tournaments.length}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Tournaments</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="morph-container">
+                    <CardContent className="p-4 text-center">
+                      <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold">{winners.length}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Winners</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="morph-container">
+                    <CardContent className="p-4 text-center">
+                      <BarChart3 className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold">{tournaments.filter(t => t.status === 'active').length}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Active Tournaments</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Tournament Management - Enhanced */}
                 <Card className="morph-container">
                   <CardHeader>
-                    <CardTitle className="text-lg md:text-xl">Create Tournament</CardTitle>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Calendar className="h-5 w-5" />
+                      <span>Tournament Management</span>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -963,15 +1028,54 @@ const TournamentWebsite = () => {
                       </div>
                     </div>
                     <Button onClick={createTournament} className="morph-button w-full">
+                      <Calendar className="h-4 w-4 mr-2" />
                       Create Tournament
                     </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Tournament List Management */}
+                <Card className="morph-container">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FileText className="h-5 w-5" />
+                      <span>Tournament List</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {tournaments.map((tournament) => (
+                        <div key={tournament.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div>
+                            <p className="font-medium">{tournament.name}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                              {tournament.type} • {new Date(tournament.scheduled_date).toLocaleDateString()} • ₹{tournament.prize_pool}
+                            </p>
+                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                              tournament.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                              tournament.status === 'active' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {tournament.status}
+                            </span>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button size="sm" variant="outline">Edit</Button>
+                            <Button size="sm" variant="destructive">Delete</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
 
                 {/* Settings Management */}
                 <Card className="morph-container">
                   <CardHeader>
-                    <CardTitle>Tournament Settings</CardTitle>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Settings className="h-5 w-5" />
+                      <span>Tournament Settings</span>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1015,7 +1119,10 @@ const TournamentWebsite = () => {
                 <Card className="morph-container">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>Player Management ({allPlayers.length} players)</span>
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-5 w-5" />
+                        <span>Player Management ({allPlayers.length} players)</span>
+                      </div>
                       <Button onClick={exportPlayersCSV} variant="outline" className="morph-button">
                         <Download className="h-4 w-4 mr-2" />
                         Export CSV
@@ -1031,6 +1138,7 @@ const TournamentWebsite = () => {
                             <p className="text-sm text-gray-600 dark:text-gray-300">
                               {player.in_game_name} • {player.free_fire_uid}
                             </p>
+                            <p className="text-xs text-gray-500">{player.email}</p>
                           </div>
                           <Button
                             onClick={() => removePlayer(player.id)}
@@ -1049,7 +1157,10 @@ const TournamentWebsite = () => {
                 {/* Winner Management */}
                 <Card className="morph-container">
                   <CardHeader>
-                    <CardTitle>Add Winner</CardTitle>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Trophy className="h-5 w-5" />
+                      <span>Winner Management</span>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1077,8 +1188,40 @@ const TournamentWebsite = () => {
                       </div>
                     </div>
                     <Button onClick={addWinner} className="morph-button">
+                      <Trophy className="h-4 w-4 mr-2" />
                       Add Winner
                     </Button>
+                  </CardContent>
+                </Card>
+
+                {/* System Notifications */}
+                <Card className="morph-container">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Bell className="h-5 w-5" />
+                      <span>System Notifications</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center space-x-2 text-blue-800 dark:text-blue-200">
+                        <Bell className="h-4 w-4" />
+                        <span className="font-medium">System Status: Operational</span>
+                      </div>
+                      <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
+                        All systems are running smoothly. Last check: {new Date().toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" className="morph-button flex-1">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Send Notification
+                      </Button>
+                      <Button variant="outline" className="morph-button flex-1">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        View Analytics
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -1137,21 +1280,21 @@ const TournamentWebsite = () => {
 
       {/* Payment Modal - Mobile optimized */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="w-[95vw] max-w-md mx-auto animate-fade-in">
+        <DialogContent className="w-[95vw] max-w-md mx-auto">
           <DialogHeader>
-            <DialogTitle className="animate-slide-in-right">Complete Payment</DialogTitle>
-            <DialogDescription className="animate-fade-in delay-100">
+            <DialogTitle>Complete Payment</DialogTitle>
+            <DialogDescription>
               Scan the QR code or use the UPI ID to complete your tournament payment.
             </DialogDescription>
           </DialogHeader>
-          <div className="text-center space-y-4 animate-fade-in delay-200">
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transform transition-all duration-300 hover:scale-105">
+          <div className="text-center space-y-4">
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <p className="font-semibold text-lg">Amount: ₹{tournamentType && settings[`entry_fee_${tournamentType}` as keyof GameSettings]}</p>
               <p className="text-sm text-gray-600 dark:text-gray-300">UPI ID: {settings.upi_id}</p>
             </div>
             
             <div className="flex justify-center">
-              <div className="transform transition-all duration-300 hover:scale-105">
+              <div>
                 <img 
                   src="/placeholder.svg" 
                   alt="Payment QR Code" 
@@ -1166,7 +1309,7 @@ const TournamentWebsite = () => {
             
             <Button 
               onClick={handlePaymentComplete} 
-              className="morph-button w-full transform transition-all duration-300 hover:scale-105"
+              className="morph-button w-full"
             >
               I've Paid
             </Button>
