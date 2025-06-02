@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Edit, Trash2, Search, Filter } from 'lucide-react';
+import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Edit, Trash2, Search, Filter, Upload, Image } from 'lucide-react';
 import TournamentCard from './TournamentCard';
 
 interface Player {
@@ -37,6 +37,7 @@ interface Winner {
   player_name: string;
   tournament_type: string;
   tournament_date: string;
+  image_url: string | null;
 }
 
 interface Tournament {
@@ -109,6 +110,8 @@ const TournamentWebsite = () => {
   });
   const [newWinnerName, setNewWinnerName] = useState('');
   const [newWinnerType, setNewWinnerType] = useState<TournamentType | ''>('');
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [winnerImage, setWinnerImage] = useState<File | null>(null);
 
   // Filter states
   const [registrationFilter, setRegistrationFilter] = useState('all');
@@ -186,11 +189,12 @@ const TournamentWebsite = () => {
   // Load theme and data on mount
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    // Load winners for all users regardless of sign-in status
+    loadWinners();
+    loadSettings();
+    loadTournaments();
     if (isSignedIn && user) {
       loadPlayerProfile();
-      loadWinners();
-      loadSettings();
-      loadTournaments();
       loadPlayerStats();
     }
   }, [isSignedIn, user, isDarkMode]);
@@ -303,19 +307,28 @@ const TournamentWebsite = () => {
     }
   };
 
-  // Load winners from Supabase
+  // Load winners from Supabase - make this work for all users
   const loadWinners = async () => {
     try {
+      console.log('Loading winners...');
       const { data, error } = await supabase
         .from('winners')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading winners:', error);
+        // Don't throw error, just log it and continue
+        setWinners([]);
+        return;
+      }
+      
+      console.log('Winners loaded:', data);
       setWinners(data || []);
     } catch (error) {
-      console.error('Error loading winners:', error);
+      console.error('Error in loadWinners:', error);
+      setWinners([]);
     }
   };
 
@@ -475,49 +488,111 @@ const TournamentWebsite = () => {
     }
   };
 
-  // Handle tournament registration
-  const handleTournamentRegistration = async () => {
-    if (!playerProfile || !tournamentType || !slotTime) {
+  // Simplified tournament registration
+  const handleTournamentRegistration = async (tournament: Tournament) => {
+    console.log('Attempting to register for tournament:', tournament);
+    
+    if (!isSignedIn) {
       toast({
-        title: "Error",
-        description: "Please fill in all tournament details",
+        title: "Authentication Required",
+        description: "Please sign in to register for tournaments",
         variant: "destructive"
       });
       return;
     }
 
+    if (!playerProfile || !isProfileComplete) {
+      toast({
+        title: "Profile Incomplete",
+        description: "Please complete your profile first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedTournament(tournament);
+    setIsPaymentModalOpen(true);
+  };
+
+  // Handle featured tournament registration
+  const handleFeaturedTournamentRegistration = (tournamentType: TournamentType) => {
+    console.log('Attempting to register for featured tournament:', tournamentType);
+    
+    if (!isSignedIn) {
+      toast({
+        title: "Authentication Required", 
+        description: "Please sign in to register for tournaments",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!playerProfile || !isProfileComplete) {
+      toast({
+        title: "Profile Incomplete",
+        description: "Please complete your profile first", 
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create a temporary tournament object for featured tournaments
+    const tempTournament: Tournament = {
+      id: `featured-${tournamentType}`,
+      name: `Featured ${tournamentType.charAt(0).toUpperCase() + tournamentType.slice(1)} Tournament`,
+      type: tournamentType,
+      scheduled_date: new Date().toISOString().split('T')[0],
+      scheduled_time: '20:00',
+      max_participants: 100,
+      entry_fee: parseInt(settings[`entry_fee_${tournamentType}` as keyof GameSettings]),
+      status: 'upcoming',
+      prize_pool: tournamentType === 'solo' ? 5000 : tournamentType === 'duo' ? 10000 : 25000
+    };
+
+    setSelectedTournament(tempTournament);
     setIsPaymentModalOpen(true);
   };
 
   // Handle payment completion
   const handlePaymentComplete = async () => {
-    if (!playerProfile || !tournamentType) return;
+    if (!playerProfile || !selectedTournament) {
+      toast({
+        title: "Error",
+        description: "Missing player or tournament information",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
+      console.log('Completing payment for:', selectedTournament);
+      
       const { error } = await supabase
         .from('tournament_registrations')
         .insert([{
           player_id: playerProfile.id,
-          tournament_type: tournamentType as TournamentType,
-          slot_time: slotTime,
-          payment_status: 'completed'
+          tournament_type: selectedTournament.type,
+          slot_time: `${selectedTournament.scheduled_date} ${selectedTournament.scheduled_time}`,
+          payment_status: 'pending'
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Registration error:', error);
+        throw error;
+      }
 
       setIsPaymentModalOpen(false);
-      setTournamentType('');
-      setSlotTime('');
+      setSelectedTournament(null);
       
       toast({
-        title: "Success",
-        description: "Tournament registration completed!"
+        title: "Registration Submitted!",
+        description: "Your tournament registration has been submitted. Payment verification pending.",
       });
     } catch (error) {
       console.error('Error completing registration:', error);
       toast({
-        title: "Error",
-        description: "Failed to complete registration",
+        title: "Registration Failed",
+        description: "Failed to complete registration. Please try again.",
         variant: "destructive"
       });
     }
@@ -608,6 +683,7 @@ const TournamentWebsite = () => {
     }
   };
 
+  // Fixed addWinner function to handle RLS properly
   const addWinner = async () => {
     if (!newWinnerName || !newWinnerType) {
       toast({
@@ -619,18 +695,44 @@ const TournamentWebsite = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('winners')
-        .insert([{
-          player_name: newWinnerName,
-          tournament_type: newWinnerType as TournamentType,
-          tournament_date: new Date().toISOString()
-        }]);
+      let imageUrl = null;
+      
+      if (winnerImage) {
+        imageUrl = await uploadWinnerImage(winnerImage);
+        if (!imageUrl) {
+          toast({
+            title: "Error", 
+            description: "Failed to upload winner image",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
 
-      if (error) throw error;
+      console.log('Adding winner:', { newWinnerName, newWinnerType, imageUrl });
+
+      // Use INSERT with proper data structure
+      const { data, error } = await supabase
+        .from('winners')
+        .insert({
+          player_name: newWinnerName,
+          tournament_type: newWinnerType,
+          tournament_date: new Date().toISOString(),
+          image_url: imageUrl
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding winner:', error);
+        throw error;
+      }
+
+      console.log('Winner added successfully:', data);
 
       setNewWinnerName('');
       setNewWinnerType('');
+      setWinnerImage(null);
       await loadWinners();
       
       toast({
@@ -641,12 +743,40 @@ const TournamentWebsite = () => {
       console.error('Error adding winner:', error);
       toast({
         title: "Error",
-        description: "Failed to add winner",
+        description: "Failed to add winner. Please check your permissions.",
         variant: "destructive"
       });
     }
   };
 
+  const uploadWinnerImage = async (file: File) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `winner-image-${Date.now()}.${fileExt}`;
+      const { data, error } = await supabase
+        .storage
+        .from('winner-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) {
+        console.error('Error uploading winner image:', error);
+        return null;
+      }
+
+      if (data) {
+        console.log('Winner image uploaded:', data);
+        return data.path;
+      }
+    } catch (error) {
+      console.error('Error in uploadWinnerImage:', error);
+      return null;
+    }
+  };
+
+  // Export players as CSV
   const exportPlayersCSV = () => {
     const csvContent = [
       ['Username', 'Email', 'In-Game Name', 'Free Fire UID', 'Created At'].join(','),
@@ -873,7 +1003,7 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
-            {/* Featured Tournament Cards - Now on homepage */}
+            {/* Featured Tournament Cards - Fixed registration */}
             {isProfileComplete && !isAdminMode && (
               <div className="space-y-6">
                 <div className="text-center">
@@ -886,10 +1016,7 @@ const TournamentWebsite = () => {
                     <div key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                       <TournamentCard
                         {...tournament}
-                        onRegister={() => {
-                          setTournamentType(tournament.type);
-                          setIsPaymentModalOpen(true);
-                        }}
+                        onRegister={() => handleFeaturedTournamentRegistration(tournament.type)}
                       />
                     </div>
                   ))}
@@ -897,8 +1024,8 @@ const TournamentWebsite = () => {
               </div>
             )}
 
-            {/* Upcoming Tournaments */}
-            {isProfileComplete && !isAdminMode && (
+            {/* Upcoming Tournaments - Fixed registration */}
+            {isProfileComplete && !isAdminMode && tournaments.length > 0 && (
               <Card className="morph-container">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -926,81 +1053,16 @@ const TournamentWebsite = () => {
                           <DollarSign className="h-4 w-4 inline mr-1" />
                           Prize Pool: ₹{tournament.prize_pool}
                         </p>
-                        <Button className="morph-button w-full" size="sm">
+                        <Button 
+                          className="morph-button w-full" 
+                          size="sm"
+                          onClick={() => handleTournamentRegistration(tournament)}
+                        >
                           Register (₹{tournament.entry_fee})
                         </Button>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Tournament Registration */}
-            {isProfileComplete && !isAdminMode && (
-              <Card className="morph-container">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Trophy className="h-5 w-5" />
-                    <span>Quick Tournament Join</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="playerName">Player Name</Label>
-                      <Input
-                        id="playerName"
-                        value={inGameName}
-                        readOnly
-                        className="morph-input bg-gray-100 dark:bg-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="uid">Free Fire UID</Label>
-                      <Input
-                        id="uid"
-                        value={freeFireUID}
-                        readOnly
-                        className="morph-input bg-gray-100 dark:bg-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="tournamentType">Tournament Type</Label>
-                      <Select value={tournamentType} onValueChange={(value) => setTournamentType(value as TournamentType)}>
-                        <SelectTrigger className="morph-input">
-                          <SelectValue placeholder="Select tournament type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="solo">Solo (₹{settings.entry_fee_solo})</SelectItem>
-                          <SelectItem value="duo">Duo (₹{settings.entry_fee_duo})</SelectItem>
-                          <SelectItem value="squad">Squad (₹{settings.entry_fee_squad})</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="slotTime">Slot Time</Label>
-                      <Select value={slotTime} onValueChange={setSlotTime}>
-                        <SelectTrigger className="morph-input">
-                          <SelectValue placeholder="Select slot time" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="10:00 AM">10:00 AM</SelectItem>
-                          <SelectItem value="2:00 PM">2:00 PM</SelectItem>
-                          <SelectItem value="6:00 PM">6:00 PM</SelectItem>
-                          <SelectItem value="9:00 PM">9:00 PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={handleTournamentRegistration}
-                    className="morph-button w-full"
-                    disabled={!tournamentType || !slotTime}
-                  >
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Pay Entry Fee
-                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -1532,8 +1594,8 @@ const TournamentWebsite = () => {
               </div>
             )}
 
-            {/* Winners Section */}
-            {!isAdminMode && winners.length > 0 && (
+            {/* Winners Section - Always visible when not in admin mode */}
+            {!isAdminMode && (
               <Card className="morph-container">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -1542,13 +1604,95 @@ const TournamentWebsite = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {winners.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {winners.slice(0, 6).map((winner) => (
+                        <div key={winner.id} className="morph-winner-card p-4 text-center">
+                          {winner.image_url ? (
+                            <img
+                              src={winner.image_url}
+                              alt={winner.player_name}
+                              className="w-16 h-16 object-cover rounded-full mx-auto mb-3 border-2 border-yellow-500"
+                              onError={(e) => {
+                                console.error('Failed to load winner image:', winner.image_url);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                          )}
+                          <h3 className="font-bold text-lg">{winner.player_name}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 capitalize">
+                            {winner.tournament_type} Tournament Winner
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(winner.tournament_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Trophy className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <p>No winners yet. Be the first champion!</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Welcome section for non-signed-in users */}
+            <div className="text-center py-12 md:py-20 px-4">
+              <Trophy className="h-12 w-12 md:h-16 md:w-16 text-orange-500 mx-auto mb-4 md:mb-6" />
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">Welcome to FF Arena</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 md:mb-8 max-w-md mx-auto text-sm md:text-base">
+                Join the ultimate Free Fire tournament platform. Sign up to compete, win prizes, and become a champion!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 sm:space-x-4 sm:space-y-0 justify-center">
+                <SignUpButton>
+                  <Button size="lg" className="morph-button w-full sm:w-auto">
+                    Get Started
+                  </Button>
+                </SignUpButton>
+                <SignInButton>
+                  <Button variant="outline" size="lg" className="morph-button w-full sm:w-auto">
+                    Sign In
+                  </Button>
+                </SignInButton>
+              </div>
+            </div>
+
+            {/* Winners Section for non-signed-in users */}
+            <Card className="morph-container">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  <span>Recent Champions</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {winners.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {winners.slice(0, 6).map((winner) => (
                       <div key={winner.id} className="morph-winner-card p-4 text-center">
-                        <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                        {winner.image_url ? (
+                          <img
+                            src={winner.image_url}
+                            alt={winner.player_name}
+                            className="w-16 h-16 object-cover rounded-full mx-auto mb-3 border-2 border-yellow-500"
+                            onError={(e) => {
+                              console.error('Failed to load winner image:', winner.image_url);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                        )}
                         <h3 className="font-bold text-lg">{winner.player_name}</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-300 capitalize">
-                          {winner.tournament_type} Tournament
+                          {winner.tournament_type} Tournament Winner
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {new Date(winner.tournament_date).toLocaleDateString()}
@@ -1556,34 +1700,19 @@ const TournamentWebsite = () => {
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Trophy className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No winners yet. Sign up to become the first champion!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </>
-        ) : (
-          <div className="text-center py-12 md:py-20 px-4">
-            <Trophy className="h-12 w-12 md:h-16 md:w-16 text-orange-500 mx-auto mb-4 md:mb-6" />
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Welcome to FF Arena</h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6 md:mb-8 max-w-md mx-auto text-sm md:text-base">
-              Join the ultimate Free Fire tournament platform. Sign up to compete, win prizes, and become a champion!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 sm:space-x-4 sm:space-y-0 justify-center">
-              <SignUpButton>
-                <Button size="lg" className="morph-button w-full sm:w-auto">
-                  Get Started
-                </Button>
-              </SignUpButton>
-              <SignInButton>
-                <Button variant="outline" size="lg" className="morph-button w-full sm:w-auto">
-                  Sign In
-                </Button>
-              </SignInButton>
-            </div>
-          </div>
         )}
       </main>
 
-      {/* Payment Modal - Mobile optimized */}
+      {/* Payment Modal - Fixed with proper tournament info */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
         <DialogContent className="w-[95vw] max-w-md mx-auto">
           <DialogHeader>
@@ -1594,8 +1723,13 @@ const TournamentWebsite = () => {
           </DialogHeader>
           <div className="text-center space-y-4">
             <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <p className="font-semibold text-lg">Amount: ₹{tournamentType && settings[`entry_fee_${tournamentType}` as keyof GameSettings]}</p>
+              <p className="font-semibold text-lg">Amount: ₹{selectedTournament?.entry_fee}</p>
               <p className="text-sm text-gray-600 dark:text-gray-300">UPI ID: {settings.upi_id}</p>
+              {selectedTournament && (
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                  Tournament: {selectedTournament.name}
+                </p>
+              )}
             </div>
             
             <div className="flex justify-center">

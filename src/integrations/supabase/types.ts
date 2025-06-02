@@ -182,6 +182,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          image_url: string | null
           player_name: string
           tournament_date: string | null
           tournament_type: Database["public"]["Enums"]["tournament_type"]
@@ -189,6 +190,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           player_name: string
           tournament_date?: string | null
           tournament_type: Database["public"]["Enums"]["tournament_type"]
@@ -196,6 +198,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           player_name?: string
           tournament_date?: string | null
           tournament_type?: Database["public"]["Enums"]["tournament_type"]
