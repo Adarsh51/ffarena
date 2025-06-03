@@ -11,11 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Edit, Trash2, Search, Filter, Upload, Image } from 'lucide-react';
 import TournamentCard from './TournamentCard';
-import { PlayerStatsDashboard } from './PlayerStatsDashboard';
-import { AdminFeaturedTournaments } from './AdminFeaturedTournaments';
-import { AdminWinnerForm } from './AdminWinnerForm';
-import { useFeaturedTournaments } from '@/hooks/useFeaturedTournaments';
-import { PaymentStatusDashboard } from './PaymentStatusDashboard';
 
 interface Player {
   id: string;
@@ -1029,14 +1024,6 @@ const TournamentWebsite = () => {
               </div>
             )}
 
-            {/* Player Dashboard - Added Payment Status */}
-            {isProfileComplete && !isAdminMode && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PlayerStatsDashboard />
-                <PaymentStatusDashboard />
-              </div>
-            )}
-
             {/* Upcoming Tournaments - Fixed registration */}
             {isProfileComplete && !isAdminMode && tournaments.length > 0 && (
               <Card className="morph-container">
@@ -1075,6 +1062,45 @@ const TournamentWebsite = () => {
                         </Button>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Player Statistics */}
+            {isProfileComplete && !isAdminMode && playerProfile && (
+              <Card className="morph-container">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    <span>Your Statistics</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(() => {
+                      const stats = playerStats.find(s => s.player_id === playerProfile.id) || {
+                        tournaments_played: 0,
+                        tournaments_won: 0,
+                        total_earnings: 0
+                      };
+                      return (
+                        <>
+                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="text-2xl font-bold text-blue-500">{stats.tournaments_played}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Tournaments Played</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="text-2xl font-bold text-green-500">{stats.tournaments_won}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Tournaments Won</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="text-2xl font-bold text-yellow-500">₹{stats.total_earnings}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Total Earnings</p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </CardContent>
               </Card>
