@@ -9,6 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      featured_tournaments: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_featured: boolean | null
+          tournament_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          tournament_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          tournament_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_tournaments_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_stats: {
         Row: {
           created_at: string
@@ -184,6 +219,7 @@ export type Database = {
           id: string
           image_url: string | null
           player_name: string
+          prize_amount: number | null
           tournament_date: string | null
           tournament_type: Database["public"]["Enums"]["tournament_type"]
         }
@@ -192,6 +228,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           player_name: string
+          prize_amount?: number | null
           tournament_date?: string | null
           tournament_type: Database["public"]["Enums"]["tournament_type"]
         }
@@ -200,6 +237,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           player_name?: string
+          prize_amount?: number | null
           tournament_date?: string | null
           tournament_type?: Database["public"]["Enums"]["tournament_type"]
         }
