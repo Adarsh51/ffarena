@@ -1712,7 +1712,7 @@ const TournamentWebsite = () => {
         )}
       </main>
 
-      {/* Payment Modal - Fixed with proper tournament info */}
+      {/* Payment Modal - Updated with real QR code */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
         <DialogContent className="w-[95vw] max-w-md mx-auto">
           <DialogHeader>
@@ -1735,7 +1735,7 @@ const TournamentWebsite = () => {
             <div className="flex justify-center">
               <div>
                 <img 
-                  src="/placeholder.svg" 
+                  src="/lovable-uploads/2b618b58-53ee-44f4-beff-668c306292b0.png" 
                   alt="Payment QR Code" 
                   className="w-40 h-40 md:w-48 md:h-48 border rounded-lg shadow-lg"
                 />
