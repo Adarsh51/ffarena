@@ -162,7 +162,7 @@ export const useFeaturedTournaments = () => {
           schema: 'public',
           table: 'settings'
         },
-        (payload) => {
+        (payload: any) => {
           // Only refetch if it's a featured tournament setting
           if (payload.new?.setting_key?.includes('featured_tournament_')) {
             fetchData();

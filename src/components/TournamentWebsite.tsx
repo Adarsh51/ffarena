@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Edit, Trash2, Search, Filter, Upload, Image } from 'lucide-react';
+import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Trash2, Search, Filter, Upload, Image } from 'lucide-react';
 import TournamentCard from './TournamentCard';
 import { useFeaturedTournaments } from './hooks/useFeaturedTournaments';
+import { AdminFeaturedTournaments } from './AdminFeaturedTournaments';
 
 interface Player {
   id: string;
@@ -833,7 +834,7 @@ const TournamentWebsite = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-purple-50'}`}>
+    <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header - Made more mobile-friendly */}
       <header className="morph-container sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-800/80 border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -1061,25 +1062,17 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
-            {/* Enhanced Admin Panel */}
+            {/* Admin Panel */}
             {isAdminMode && (
-              <div className="space-y-4 md:space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h2 className="text-xl md:text-2xl font-bold flex items-center space-x-2">
-                    <Shield className="h-6 w-6 text-blue-500" />
-                    <span>Admin Dashboard</span>
-                  </h2>
-                  <Button 
-                    onClick={() => setIsAdminMode(false)}
-                    variant="outline"
-                    className="morph-button w-full sm:w-auto"
-                  >
-                    Exit Admin
+              <div className="container mx-auto px-4 py-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">Admin Panel</h2>
+                  <Button onClick={() => setIsAdminMode(false)} variant="outline">
+                    Exit Admin Mode
                   </Button>
                 </div>
 
-                {/* Admin Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                   <Card className="morph-container">
                     <CardContent className="p-4 text-center">
                       <Users className="h-8 w-8 text-blue-500 mx-auto mb-2" />
@@ -1110,445 +1103,447 @@ const TournamentWebsite = () => {
                   </Card>
                 </div>
 
-                {/* Featured Tournaments Management */}
-                <AdminFeaturedTournaments />
-
-                {/* Tournament Registrations Management */}
-                <Card className="morph-container">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-5 w-5" />
-                        <span>Tournament Registrations ({filteredRegistrations.length})</span>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Featured Tournaments Management */}
+                  <AdminFeaturedTournaments />
+                  
+                  {/* Tournament Registrations Management */}
+                  <Card className="morph-container">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="h-5 w-5" />
+                          <span>Tournament Registrations ({filteredRegistrations.length})</span>
+                        </div>
+                        <Button onClick={exportRegistrationsCSV} variant="outline" className="morph-button">
+                          <Download className="h-4 w-4 mr-2" />
+                          Export CSV
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Filters */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label>Search Players</Label>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                            <Input
+                              placeholder="Search by name, email, UID..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="morph-input pl-10"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label>Tournament Type</Label>
+                          <Select value={registrationFilter} onValueChange={setRegistrationFilter}>
+                            <SelectTrigger className="morph-input">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Types</SelectItem>
+                              <SelectItem value="solo">Solo</SelectItem>
+                              <SelectItem value="duo">Duo</SelectItem>
+                              <SelectItem value="squad">Squad</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Payment Status</Label>
+                          <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                            <SelectTrigger className="morph-input">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Status</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="failed">Failed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-end">
+                          <Button 
+                            onClick={() => {
+                              setSearchTerm('');
+                              setRegistrationFilter('all');
+                              setPaymentFilter('all');
+                            }}
+                            variant="outline" 
+                            className="morph-button w-full"
+                          >
+                            <Filter className="h-4 w-4 mr-2" />
+                            Clear
+                          </Button>
+                        </div>
                       </div>
-                      <Button onClick={exportRegistrationsCSV} variant="outline" className="morph-button">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export CSV
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Filters */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <Label>Search Players</Label>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+
+                      {/* Registrations Table */}
+                      <div className="rounded-md border max-h-96 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Player Info</TableHead>
+                              <TableHead>Tournament</TableHead>
+                              <TableHead>Slot Time</TableHead>
+                              <TableHead>Payment Status</TableHead>
+                              <TableHead>Registration Date</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredRegistrations.map((registration) => (
+                              <TableRow key={registration.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">{registration.player.username}</p>
+                                    <p className="text-sm text-gray-600">{registration.player.email}</p>
+                                    <p className="text-sm text-gray-500">
+                                      IGN: {registration.player.in_game_name || 'N/A'}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      UID: {registration.player.free_fire_uid || 'N/A'}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    registration.tournament_type === 'solo' ? 'bg-blue-100 text-blue-800' :
+                                    registration.tournament_type === 'duo' ? 'bg-green-100 text-green-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {registration.tournament_type.toUpperCase()}
+                                  </span>
+                                </TableCell>
+                                <TableCell>{registration.slot_time}</TableCell>
+                                <TableCell>
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    registration.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    registration.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {registration.payment_status === 'completed' && <CheckCircle className="w-3 h-3 mr-1" />}
+                                    {registration.payment_status === 'failed' && <XCircle className="w-3 h-3 mr-1" />}
+                                    {registration.payment_status}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(registration.created_at).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    {registration.payment_status === 'pending' && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => updatePaymentStatus(registration.id, 'completed')}
+                                          className="bg-green-500 hover:bg-green-600"
+                                        >
+                                          <CheckCircle className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          onClick={() => updatePaymentStatus(registration.id, 'failed')}
+                                        >
+                                          <XCircle className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => deleteRegistration(registration.id)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {filteredRegistrations.length === 0 && (
+                          <div className="text-center py-8 text-gray-500">
+                            No registrations found matching your criteria.
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tournament Management - Enhanced */}
+                  <Card className="morph-container">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Calendar className="h-5 w-5" />
+                        <span>Tournament Management</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                          <Label className="text-sm font-medium">Tournament Name</Label>
                           <Input
-                            placeholder="Search by name, email, UID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="morph-input pl-10"
+                            value={newTournament.name}
+                            onChange={(e) => setNewTournament(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Enter tournament name"
+                            className="morph-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Tournament Type</Label>
+                          <Select 
+                            value={newTournament.type} 
+                            onValueChange={(value) => setNewTournament(prev => ({ ...prev, type: value as TournamentType }))}
+                          >
+                            <SelectTrigger className="morph-input mt-1">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="solo">Solo</SelectItem>
+                              <SelectItem value="duo">Duo</SelectItem>
+                              <SelectItem value="squad">Squad</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Date</Label>
+                          <Input
+                            type="date"
+                            value={newTournament.scheduled_date}
+                            onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                            className="morph-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Time</Label>
+                          <Input
+                            type="time"
+                            value={newTournament.scheduled_time}
+                            onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_time: e.target.value }))}
+                            className="morph-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Max Participants</Label>
+                          <Input
+                            type="number"
+                            value={newTournament.max_participants}
+                            onChange={(e) => setNewTournament(prev => ({ ...prev, max_participants: parseInt(e.target.value) }))}
+                            className="morph-input mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Prize Pool (₹)</Label>
+                          <Input
+                            type="number"
+                            value={newTournament.prize_pool}
+                            onChange={(e) => setNewTournament(prev => ({ ...prev, prize_pool: parseInt(e.target.value) }))}
+                            className="morph-input mt-1"
                           />
                         </div>
                       </div>
-                      <div>
-                        <Label>Tournament Type</Label>
-                        <Select value={registrationFilter} onValueChange={setRegistrationFilter}>
-                          <SelectTrigger className="morph-input">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Types</SelectItem>
-                            <SelectItem value="solo">Solo</SelectItem>
-                            <SelectItem value="duo">Duo</SelectItem>
-                            <SelectItem value="squad">Squad</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <Button onClick={createTournament} className="morph-button w-full">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Create Tournament
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tournament List Management */}
+                  <Card className="morph-container">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <FileText className="h-5 w-5" />
+                        <span>Tournament List</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {tournaments.map((tournament) => (
+                          <div key={tournament.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div>
+                              <p className="font-medium">{tournament.name}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {tournament.type} • {new Date(tournament.scheduled_date).toLocaleDateString()} • ₹{tournament.prize_pool}
+                              </p>
+                              <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                                tournament.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                                tournament.status === 'active' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {tournament.status}
+                              </span>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button size="sm" variant="outline">Edit</Button>
+                              <Button size="sm" variant="destructive">Delete</Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div>
-                        <Label>Payment Status</Label>
-                        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                          <SelectTrigger className="morph-input">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="failed">Failed</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    </CardContent>
+                  </Card>
+
+                  {/* Settings Management */}
+                  <Card className="morph-container">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Settings className="h-5 w-5" />
+                        <span>Tournament Settings</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Solo Entry Fee</Label>
+                          <Input
+                            value={settings.entry_fee_solo}
+                            onChange={(e) => updateSettings('entry_fee_solo', e.target.value)}
+                            className="morph-input"
+                          />
+                        </div>
+                        <div>
+                          <Label>Duo Entry Fee</Label>
+                          <Input
+                            value={settings.entry_fee_duo}
+                            onChange={(e) => updateSettings('entry_fee_duo', e.target.value)}
+                            className="morph-input"
+                          />
+                        </div>
+                        <div>
+                          <Label>Squad Entry Fee</Label>
+                          <Input
+                            value={settings.entry_fee_squad}
+                            onChange={(e) => updateSettings('entry_fee_squad', e.target.value)}
+                            className="morph-input"
+                          />
+                        </div>
+                        <div>
+                          <Label>UPI ID</Label>
+                          <Input
+                            value={settings.upi_id}
+                            onChange={(e) => updateSettings('upi_id', e.target.value)}
+                            className="morph-input"
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-end">
-                        <Button 
-                          onClick={() => {
-                            setSearchTerm('');
-                            setRegistrationFilter('all');
-                            setPaymentFilter('all');
-                          }}
-                          variant="outline" 
-                          className="morph-button w-full"
-                        >
-                          <Filter className="h-4 w-4 mr-2" />
-                          Clear
+                    </CardContent>
+                  </Card>
+
+                  {/* Player Management */}
+                  <Card className="morph-container">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-5 w-5" />
+                          <span>Player Management ({allPlayers.length} players)</span>
+                        </div>
+                        <Button onClick={exportPlayersCSV} variant="outline" className="morph-button">
+                          <Download className="h-4 w-4 mr-2" />
+                          Export CSV
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {allPlayers.map((player) => (
+                          <div key={player.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div>
+                              <p className="font-medium">{player.username}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {player.in_game_name} • {player.free_fire_uid}
+                              </p>
+                              <p className="text-xs text-gray-500">{player.email}</p>
+                            </div>
+                            <Button
+                              onClick={() => removePlayer(player.id)}
+                              variant="destructive"
+                              size="sm"
+                              className="morph-button"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Winner Management */}
+                  <Card className="morph-container">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Trophy className="h-5 w-5" />
+                        <span>Winner Management</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Winner Name</Label>
+                          <Input
+                            value={newWinnerName}
+                            onChange={(e) => setNewWinnerName(e.target.value)}
+                            placeholder="Enter winner's name"
+                            className="morph-input"
+                          />
+                        </div>
+                        <div>
+                          <Label>Tournament Type</Label>
+                          <Select value={newWinnerType} onValueChange={(value) => setNewWinnerType(value as TournamentType)}>
+                            <SelectTrigger className="morph-input">
+                              <SelectValue placeholder="Select tournament type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="solo">Solo</SelectItem>
+                              <SelectItem value="duo">Duo</SelectItem>
+                              <SelectItem value="squad">Squad</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button onClick={addWinner} className="morph-button">
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Add Winner
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* System Notifications */}
+                  <Card className="morph-container">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Bell className="h-5 w-5" />
+                        <span>System Notifications</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center space-x-2 text-blue-800 dark:text-blue-200">
+                          <Bell className="h-4 w-4" />
+                          <span className="font-medium">System Status: Operational</span>
+                        </div>
+                        <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
+                          All systems are running smoothly. Last check: {new Date().toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" className="morph-button flex-1">
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Send Notification
+                        </Button>
+                        <Button variant="outline" className="morph-button flex-1">
+                          <BarChart3 className="h-4 w-4 mr-2" />
+                          View Analytics
                         </Button>
                       </div>
-                    </div>
-
-                    {/* Registrations Table */}
-                    <div className="rounded-md border max-h-96 overflow-y-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Player Info</TableHead>
-                            <TableHead>Tournament</TableHead>
-                            <TableHead>Slot Time</TableHead>
-                            <TableHead>Payment Status</TableHead>
-                            <TableHead>Registration Date</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredRegistrations.map((registration) => (
-                            <TableRow key={registration.id}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium">{registration.player.username}</p>
-                                  <p className="text-sm text-gray-600">{registration.player.email}</p>
-                                  <p className="text-sm text-gray-500">
-                                    IGN: {registration.player.in_game_name || 'N/A'}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    UID: {registration.player.free_fire_uid || 'N/A'}
-                                  </p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  registration.tournament_type === 'solo' ? 'bg-blue-100 text-blue-800' :
-                                  registration.tournament_type === 'duo' ? 'bg-green-100 text-green-800' :
-                                  'bg-purple-100 text-purple-800'
-                                }`}>
-                                  {registration.tournament_type.toUpperCase()}
-                                </span>
-                              </TableCell>
-                              <TableCell>{registration.slot_time}</TableCell>
-                              <TableCell>
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  registration.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                                  registration.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {registration.payment_status === 'completed' && <CheckCircle className="w-3 h-3 mr-1" />}
-                                  {registration.payment_status === 'failed' && <XCircle className="w-3 h-3 mr-1" />}
-                                  {registration.payment_status}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {new Date(registration.created_at).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  {registration.payment_status === 'pending' && (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        onClick={() => updatePaymentStatus(registration.id, 'completed')}
-                                        className="bg-green-500 hover:bg-green-600"
-                                      >
-                                        <CheckCircle className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => updatePaymentStatus(registration.id, 'failed')}
-                                      >
-                                        <XCircle className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => deleteRegistration(registration.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      {filteredRegistrations.length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          No registrations found matching your criteria.
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Tournament Management - Enhanced */}
-                <Card className="morph-container">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Calendar className="h-5 w-5" />
-                      <span>Tournament Management</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="sm:col-span-2">
-                        <Label className="text-sm font-medium">Tournament Name</Label>
-                        <Input
-                          value={newTournament.name}
-                          onChange={(e) => setNewTournament(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Enter tournament name"
-                          className="morph-input mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Tournament Type</Label>
-                        <Select 
-                          value={newTournament.type} 
-                          onValueChange={(value) => setNewTournament(prev => ({ ...prev, type: value as TournamentType }))}
-                        >
-                          <SelectTrigger className="morph-input mt-1">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="solo">Solo</SelectItem>
-                            <SelectItem value="duo">Duo</SelectItem>
-                            <SelectItem value="squad">Squad</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Date</Label>
-                        <Input
-                          type="date"
-                          value={newTournament.scheduled_date}
-                          onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                          className="morph-input mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Time</Label>
-                        <Input
-                          type="time"
-                          value={newTournament.scheduled_time}
-                          onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_time: e.target.value }))}
-                          className="morph-input mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Max Participants</Label>
-                        <Input
-                          type="number"
-                          value={newTournament.max_participants}
-                          onChange={(e) => setNewTournament(prev => ({ ...prev, max_participants: parseInt(e.target.value) }))}
-                          className="morph-input mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Prize Pool (₹)</Label>
-                        <Input
-                          type="number"
-                          value={newTournament.prize_pool}
-                          onChange={(e) => setNewTournament(prev => ({ ...prev, prize_pool: parseInt(e.target.value) }))}
-                          className="morph-input mt-1"
-                        />
-                      </div>
-                    </div>
-                    <Button onClick={createTournament} className="morph-button w-full">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Create Tournament
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Tournament List Management */}
-                <Card className="morph-container">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <FileText className="h-5 w-5" />
-                      <span>Tournament List</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {tournaments.map((tournament) => (
-                        <div key={tournament.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div>
-                            <p className="font-medium">{tournament.name}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                              {tournament.type} • {new Date(tournament.scheduled_date).toLocaleDateString()} • ₹{tournament.prize_pool}
-                            </p>
-                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                              tournament.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-                              tournament.status === 'active' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {tournament.status}
-                            </span>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">Edit</Button>
-                            <Button size="sm" variant="destructive">Delete</Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Settings Management */}
-                <Card className="morph-container">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Settings className="h-5 w-5" />
-                      <span>Tournament Settings</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Solo Entry Fee</Label>
-                        <Input
-                          value={settings.entry_fee_solo}
-                          onChange={(e) => updateSettings('entry_fee_solo', e.target.value)}
-                          className="morph-input"
-                        />
-                      </div>
-                      <div>
-                        <Label>Duo Entry Fee</Label>
-                        <Input
-                          value={settings.entry_fee_duo}
-                          onChange={(e) => updateSettings('entry_fee_duo', e.target.value)}
-                          className="morph-input"
-                        />
-                      </div>
-                      <div>
-                        <Label>Squad Entry Fee</Label>
-                        <Input
-                          value={settings.entry_fee_squad}
-                          onChange={(e) => updateSettings('entry_fee_squad', e.target.value)}
-                          className="morph-input"
-                        />
-                      </div>
-                      <div>
-                        <Label>UPI ID</Label>
-                        <Input
-                          value={settings.upi_id}
-                          onChange={(e) => updateSettings('upi_id', e.target.value)}
-                          className="morph-input"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Player Management */}
-                <Card className="morph-container">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-5 w-5" />
-                        <span>Player Management ({allPlayers.length} players)</span>
-                      </div>
-                      <Button onClick={exportPlayersCSV} variant="outline" className="morph-button">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export CSV
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {allPlayers.map((player) => (
-                        <div key={player.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div>
-                            <p className="font-medium">{player.username}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                              {player.in_game_name} • {player.free_fire_uid}
-                            </p>
-                            <p className="text-xs text-gray-500">{player.email}</p>
-                          </div>
-                          <Button
-                            onClick={() => removePlayer(player.id)}
-                            variant="destructive"
-                            size="sm"
-                            className="morph-button"
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Winner Management */}
-                <Card className="morph-container">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Trophy className="h-5 w-5" />
-                      <span>Winner Management</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Winner Name</Label>
-                        <Input
-                          value={newWinnerName}
-                          onChange={(e) => setNewWinnerName(e.target.value)}
-                          placeholder="Enter winner's name"
-                          className="morph-input"
-                        />
-                      </div>
-                      <div>
-                        <Label>Tournament Type</Label>
-                        <Select value={newWinnerType} onValueChange={(value) => setNewWinnerType(value as TournamentType)}>
-                          <SelectTrigger className="morph-input">
-                            <SelectValue placeholder="Select tournament type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="solo">Solo</SelectItem>
-                            <SelectItem value="duo">Duo</SelectItem>
-                            <SelectItem value="squad">Squad</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button onClick={addWinner} className="morph-button">
-                      <Trophy className="h-4 w-4 mr-2" />
-                      Add Winner
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* System Notifications */}
-                <Card className="morph-container">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Bell className="h-5 w-5" />
-                      <span>System Notifications</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <div className="flex items-center space-x-2 text-blue-800 dark:text-blue-200">
-                        <Bell className="h-4 w-4" />
-                        <span className="font-medium">System Status: Operational</span>
-                      </div>
-                      <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-                        All systems are running smoothly. Last check: {new Date().toLocaleTimeString()}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" className="morph-button flex-1">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Send Notification
-                      </Button>
-                      <Button variant="outline" className="morph-button flex-1">
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        View Analytics
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
 
