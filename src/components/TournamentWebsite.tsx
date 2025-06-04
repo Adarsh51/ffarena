@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Trash2, Search, Filter, Upload, Image } from 'lucide-react';
 import TournamentCard from './TournamentCard';
-import { useFeaturedTournaments } from './hooks/useFeaturedTournaments';
+import { useFeaturedTournaments } from '@/hooks/useFeaturedTournaments';
 import { AdminFeaturedTournaments } from './AdminFeaturedTournaments';
 
 interface Player {
