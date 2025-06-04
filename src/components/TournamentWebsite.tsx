@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Edit, Trash2, Search, Filter, Upload, Image } from 'lucide-react';
 import TournamentCard from './TournamentCard';
+import { useFeaturedTournaments } from './hooks/useFeaturedTournaments';
 
 interface Player {
   id: string;
@@ -72,6 +73,7 @@ const TournamentWebsite = () => {
   const { user, isSignedIn } = useUser();
   const { signOut } = useAuth();
   const { toast } = useToast();
+  const { featuredTemplates } = useFeaturedTournaments();
   
   // Theme state
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -128,63 +130,16 @@ const TournamentWebsite = () => {
     prize_pool: 1000
   });
 
-  // Featured tournament cards data
-  const featuredTournaments = [
-    {
-      title: "Friday Night Battle",
-      type: 'solo' as const,
-      time: "8:00 PM",
-      entryFee: settings.entry_fee_solo,
-      prizePool: "5000",
-      image: "photo-1581092795360-fd1ca04f0952",
-      maxPlayers: 100
-    },
-    {
-      title: "Weekend Warriors",
-      type: 'duo' as const,
-      time: "6:00 PM", 
-      entryFee: settings.entry_fee_duo,
-      prizePool: "10000",
-      image: "photo-1605810230434-7631ac76ec81",
-      maxPlayers: 50
-    },
-    {
-      title: "Squad Championship",
-      type: 'squad' as const,
-      time: "9:00 PM",
-      entryFee: settings.entry_fee_squad,
-      prizePool: "25000",
-      image: "photo-1519389950473-47ba0277781c",
-      maxPlayers: 25
-    },
-    {
-      title: "Elite Solo Challenge",
-      type: 'solo' as const,
-      time: "7:00 PM",
-      entryFee: settings.entry_fee_solo,
-      prizePool: "3000",
-      image: "photo-1488590528505-98d2b5aba04b",
-      maxPlayers: 80
-    },
-    {
-      title: "Dynamic Duo Derby",
-      type: 'duo' as const,
-      time: "5:00 PM",
-      entryFee: settings.entry_fee_duo,
-      prizePool: "8000",
-      image: "photo-1526374965328-7f61d4dc18c5",
-      maxPlayers: 40
-    },
-    {
-      title: "Squad Legends",
-      type: 'squad' as const,
-      time: "10:00 PM",
-      entryFee: settings.entry_fee_squad,
-      prizePool: "15000",
-      image: "photo-1487058792275-0ad4aaf24ca7",
-      maxPlayers: 30
-    }
-  ];
+  // Use customized featured tournament templates from the hook
+  const featuredTournaments = featuredTemplates.map(template => ({
+    title: template.title,
+    type: template.type,
+    time: template.time,
+    entryFee: settings[`entry_fee_${template.type}` as keyof GameSettings],
+    prizePool: template.prizePool,
+    image: template.image,
+    maxPlayers: template.maxPlayers
+  }));
 
   // Load theme and data on mount
   useEffect(() => {
@@ -1154,6 +1109,9 @@ const TournamentWebsite = () => {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Featured Tournaments Management */}
+                <AdminFeaturedTournaments />
 
                 {/* Tournament Registrations Management */}
                 <Card className="morph-container">
