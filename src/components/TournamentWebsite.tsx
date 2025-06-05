@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,6 +52,8 @@ interface Tournament {
   entry_fee: number;
   status: 'upcoming' | 'active' | 'completed';
   prize_pool: number;
+  room_id?: string;
+  room_password?: string;
 }
 
 interface PlayerStats {
@@ -116,6 +117,7 @@ const TournamentWebsite = () => {
   const [newWinnerType, setNewWinnerType] = useState<TournamentType | ''>('');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [winnerImage, setWinnerImage] = useState<File | null>(null);
+  const [userRegistrations, setUserRegistrations] = useState<TournamentRegistration[]>([]);
 
   // Filter states
   const [registrationFilter, setRegistrationFilter] = useState('all');
@@ -337,6 +339,31 @@ const TournamentWebsite = () => {
     }
   };
 
+  // Load user's registrations
+  const loadUserRegistrations = async () => {
+    if (!playerProfile) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('tournament_registrations')
+        .select('*')
+        .eq('player_id', playerProfile.id)
+        .eq('payment_status', 'completed');
+
+      if (error) throw error;
+      setUserRegistrations(data || []);
+    } catch (error) {
+      console.error('Error loading user registrations:', error);
+    }
+  };
+
+  // Add useEffect to load user registrations when player profile is loaded
+  useEffect(() => {
+    if (playerProfile) {
+      loadUserRegistrations();
+    }
+  }, [playerProfile]);
+
   // Create new tournament
   const createTournament = async () => {
     if (!newTournament.name || !newTournament.type || !newTournament.scheduled_date || !newTournament.scheduled_time) {
@@ -352,7 +379,7 @@ const TournamentWebsite = () => {
       const entryFeeKey = `entry_fee_${newTournament.type}` as keyof GameSettings;
       const entryFee = parseInt(settings[entryFeeKey]);
 
-      const { error } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('tournaments')
         .insert([{
           name: newTournament.name,
@@ -362,8 +389,12 @@ const TournamentWebsite = () => {
           max_participants: newTournament.max_participants,
           entry_fee: entryFee,
           status: 'upcoming',
-          prize_pool: newTournament.prize_pool
-        }]);
+          prize_pool: newTournament.prize_pool,
+          room_id: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          room_password: Math.random().toString(36).substring(2, 8).toUpperCase()
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -834,6 +865,13 @@ const TournamentWebsite = () => {
     }
   };
 
+  // Function to check if user has completed payment for a tournament
+  const hasCompletedPayment = (tournamentType: string) => {
+    return userRegistrations.some(reg => 
+      reg.tournament_type === tournamentType && reg.payment_status === 'completed'
+    );
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header - Made more mobile-friendly */}
@@ -960,7 +998,7 @@ const TournamentWebsite = () => {
               </Card>
             )}
 
-            {/* Featured Tournament Cards - Fixed registration */}
+            {/* Featured Tournament Cards - Updated with timer and room credentials */}
             {isProfileComplete && !isAdminMode && (
               <div className="space-y-6">
                 <div className="text-center">
@@ -974,6 +1012,9 @@ const TournamentWebsite = () => {
                       <TournamentCard
                         {...tournament}
                         onRegister={() => handleFeaturedTournamentRegistration(tournament.type)}
+                        userHasCompletedPayment={hasCompletedPayment(tournament.type)}
+                        roomId={`ROOM${index + 1}`}
+                        roomPassword={`PASS${index + 1}`}
                       />
                     </div>
                   ))}
@@ -981,7 +1022,7 @@ const TournamentWebsite = () => {
               </div>
             )}
 
-            {/* Upcoming Tournaments - Fixed registration */}
+            {/* Upcoming Tournaments - Updated with timer and room credentials */}
             {isProfileComplete && !isAdminMode && tournaments.length > 0 && (
               <Card className="morph-container">
                 <CardHeader>
@@ -993,31 +1034,23 @@ const TournamentWebsite = () => {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {tournaments.filter(t => t.status === 'upcoming').map((tournament) => (
-                      <div key={tournament.id} className="morph-winner-card p-4">
-                        <h3 className="font-bold text-lg mb-2">{tournament.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 capitalize mb-1">
-                          {tournament.type} Tournament
-                        </p>
-                        <p className="text-sm mb-1">
-                          <Clock className="h-4 w-4 inline mr-1" />
-                          {new Date(tournament.scheduled_date).toLocaleDateString()} at {tournament.scheduled_time}
-                        </p>
-                        <p className="text-sm mb-1">
-                          <Users className="h-4 w-4 inline mr-1" />
-                          Max: {tournament.max_participants} players
-                        </p>
-                        <p className="text-sm mb-3">
-                          <DollarSign className="h-4 w-4 inline mr-1" />
-                          Prize Pool: ₹{tournament.prize_pool}
-                        </p>
-                        <Button 
-                          className="morph-button w-full" 
-                          size="sm"
-                          onClick={() => handleTournamentRegistration(tournament)}
-                        >
-                          Register (₹{tournament.entry_fee})
-                        </Button>
-                      </div>
+                      <TournamentCard
+                        key={tournament.id}
+                        title={tournament.name}
+                        type={tournament.type}
+                        time={`${tournament.scheduled_date} ${tournament.scheduled_time}`}
+                        entryFee={tournament.entry_fee.toString()}
+                        prizePool={tournament.prize_pool.toString()}
+                        image="photo-1542751371-adc38448a05e"
+                        maxPlayers={tournament.max_participants}
+                        onRegister={() => handleTournamentRegistration(tournament)}
+                        scheduledDate={tournament.scheduled_date}
+                        scheduledTime={tournament.scheduled_time}
+                        status={tournament.status}
+                        roomId={tournament.room_id || ''}
+                        roomPassword={tournament.room_password || ''}
+                        userHasCompletedPayment={hasCompletedPayment(tournament.type)}
+                      />
                     ))}
                   </div>
                 </CardContent>
