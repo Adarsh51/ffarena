@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +43,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CalendarIcon, ReloadIcon } from "lucide-react"
+import { CalendarIcon, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 
 interface Tournament {
@@ -367,7 +366,8 @@ const TournamentWebsite = () => {
           entry_fee: newTournament.entry_fee,
           max_participants: newTournament.max_participants,
           status: newTournament.status,
-        }]);
+        }])
+        .select();
 
       if (error) {
         console.error('Error creating tournament:', error);
@@ -782,7 +782,7 @@ const TournamentWebsite = () => {
                           <Button onClick={handleCreateTournament} disabled={isSaving}>
                             {isSaving ? (
                               <>
-                                <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Creating...
                               </>
                             ) : (
