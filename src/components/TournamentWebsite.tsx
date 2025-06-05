@@ -43,7 +43,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
+import { ReloadIcon } from "@radix-ui/react-icons"
 import { Progress } from "@/components/ui/progress"
 
 interface Tournament {
@@ -81,7 +82,7 @@ const TournamentWebsite = () => {
   const [activeAdminTab, setActiveAdminTab] = useState<string>('general');
   const [newTournament, setNewTournament] = useState({
     name: '',
-    type: 'solo' as 'solo' | 'duo' | 'squad',
+    type: 'solo',
     scheduled_date: '',
     scheduled_time: '',
     prize_pool: 0,
@@ -189,7 +190,7 @@ const TournamentWebsite = () => {
         });
       } else {
         const settingsData: Settings = {};
-        data?.forEach(item => {
+        data.forEach(item => {
           settingsData[item.setting_key] = item.setting_value;
         });
         setSettings(settingsData);
@@ -357,17 +358,7 @@ const TournamentWebsite = () => {
     try {
       const { data, error } = await supabase
         .from('tournaments')
-        .insert([{
-          name: newTournament.name,
-          type: newTournament.type,
-          scheduled_date: newTournament.scheduled_date,
-          scheduled_time: newTournament.scheduled_time,
-          prize_pool: newTournament.prize_pool,
-          entry_fee: newTournament.entry_fee,
-          max_participants: newTournament.max_participants,
-          status: newTournament.status,
-        }])
-        .select();
+        .insert([newTournament]);
 
       if (error) {
         console.error('Error creating tournament:', error);
@@ -382,9 +373,7 @@ const TournamentWebsite = () => {
           title: "Success",
           description: "Tournament created successfully"
         });
-        if (data && data.length > 0) {
-          setTournaments([...tournaments, { ...newTournament, id: data[0].id }]);
-        }
+        setTournaments([...tournaments, { ...newTournament, id: data[0].id }]);
         setNewTournament({
           name: '',
           type: 'solo',
@@ -484,7 +473,7 @@ const TournamentWebsite = () => {
                 <TournamentCard
                   key={tournament.id}
                   title={tournament.name}
-                  type={tournament.type as 'solo' | 'duo' | 'squad'}
+                  type={tournament.type}
                   time={tournament.scheduled_time}
                   entryFee={tournament.entry_fee?.toString() || '0'}
                   prizePool={tournament.prize_pool?.toString() || '0'}
@@ -673,6 +662,11 @@ const TournamentWebsite = () => {
                                 )}
                               </div>
                             </div>
+                            {/* <TournamentTimer 
+                              scheduledDate={tournament.scheduled_date}
+                              scheduledTime={tournament.scheduled_time}
+                              status={tournament.status}
+                            /> */}
                           </div>
                         ))}
                       </div>
@@ -701,7 +695,7 @@ const TournamentWebsite = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               <Label htmlFor="type">Type</Label>
-                              <Select onValueChange={(value: 'solo' | 'duo' | 'squad') => setNewTournament({ ...newTournament, type: value })}>
+                              <Select onValueChange={(value) => setNewTournament({ ...newTournament, type: value })}>
                                 <SelectTrigger className="w-[180px]">
                                   <SelectValue placeholder="Select type" defaultValue={newTournament.type} />
                                 </SelectTrigger>
@@ -782,7 +776,7 @@ const TournamentWebsite = () => {
                           <Button onClick={handleCreateTournament} disabled={isSaving}>
                             {isSaving ? (
                               <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
                                 Creating...
                               </>
                             ) : (
