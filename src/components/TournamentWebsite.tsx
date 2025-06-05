@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import {
   UserPlus,
   Loader2
 } from 'lucide-react';
-import { TournamentCard } from '@/components/TournamentCard';
+import TournamentCard from '@/components/TournamentCard';
 import { RoomCredentials } from './RoomCredentials';
 import { TournamentTimer } from './TournamentTimer';
 
