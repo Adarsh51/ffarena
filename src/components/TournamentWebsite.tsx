@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -43,8 +44,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { ReloadIcon } from "@radix-ui/react-icons"
+import { CalendarIcon, ReloadIcon } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 
 interface Tournament {
@@ -82,7 +82,7 @@ const TournamentWebsite = () => {
   const [activeAdminTab, setActiveAdminTab] = useState<string>('general');
   const [newTournament, setNewTournament] = useState({
     name: '',
-    type: 'solo',
+    type: 'solo' as 'solo' | 'duo' | 'squad',
     scheduled_date: '',
     scheduled_time: '',
     prize_pool: 0,
@@ -190,7 +190,7 @@ const TournamentWebsite = () => {
         });
       } else {
         const settingsData: Settings = {};
-        data.forEach(item => {
+        data?.forEach(item => {
           settingsData[item.setting_key] = item.setting_value;
         });
         setSettings(settingsData);
@@ -358,7 +358,16 @@ const TournamentWebsite = () => {
     try {
       const { data, error } = await supabase
         .from('tournaments')
-        .insert([newTournament]);
+        .insert([{
+          name: newTournament.name,
+          type: newTournament.type,
+          scheduled_date: newTournament.scheduled_date,
+          scheduled_time: newTournament.scheduled_time,
+          prize_pool: newTournament.prize_pool,
+          entry_fee: newTournament.entry_fee,
+          max_participants: newTournament.max_participants,
+          status: newTournament.status,
+        }]);
 
       if (error) {
         console.error('Error creating tournament:', error);
@@ -373,7 +382,9 @@ const TournamentWebsite = () => {
           title: "Success",
           description: "Tournament created successfully"
         });
-        setTournaments([...tournaments, { ...newTournament, id: data[0].id }]);
+        if (data && data.length > 0) {
+          setTournaments([...tournaments, { ...newTournament, id: data[0].id }]);
+        }
         setNewTournament({
           name: '',
           type: 'solo',
@@ -473,7 +484,7 @@ const TournamentWebsite = () => {
                 <TournamentCard
                   key={tournament.id}
                   title={tournament.name}
-                  type={tournament.type}
+                  type={tournament.type as 'solo' | 'duo' | 'squad'}
                   time={tournament.scheduled_time}
                   entryFee={tournament.entry_fee?.toString() || '0'}
                   prizePool={tournament.prize_pool?.toString() || '0'}
@@ -662,11 +673,6 @@ const TournamentWebsite = () => {
                                 )}
                               </div>
                             </div>
-                            {/* <TournamentTimer 
-                              scheduledDate={tournament.scheduled_date}
-                              scheduledTime={tournament.scheduled_time}
-                              status={tournament.status}
-                            /> */}
                           </div>
                         ))}
                       </div>
@@ -695,7 +701,7 @@ const TournamentWebsite = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               <Label htmlFor="type">Type</Label>
-                              <Select onValueChange={(value) => setNewTournament({ ...newTournament, type: value })}>
+                              <Select onValueChange={(value: 'solo' | 'duo' | 'squad') => setNewTournament({ ...newTournament, type: value })}>
                                 <SelectTrigger className="w-[180px]">
                                   <SelectValue placeholder="Select type" defaultValue={newTournament.type} />
                                 </SelectTrigger>
