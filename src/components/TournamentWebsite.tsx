@@ -390,7 +390,12 @@ const TournamentWebsite = () => {
       )}
 
       <AdminWinnerForm isOpen={isWinnerFormOpen} onClose={closeWinnerForm} tournament={selectedTournament} />
-      <RoomCredentials isOpen={isRoomCredentialsOpen} onClose={closeRoomCredentials} tournament={selectedTournament} />
+      <RoomCredentials 
+        isOpen={isRoomCredentialsOpen} 
+        onClose={closeRoomCredentials} 
+        tournament={selectedTournament}
+        isAdminView={true}
+      />
     </div>
   );
 };
