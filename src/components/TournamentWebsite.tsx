@@ -1,420 +1,398 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from '@/hooks/use-toast';
+import { useFeaturedTournaments } from '@/hooks/useFeaturedTournaments';
+import TournamentCard from './TournamentCard';
+import { AdminWinnerForm } from './AdminWinnerForm';
+import { PlayerStatsDashboard } from './PlayerStatsDashboard';
+import { AdminFeaturedTournaments } from './AdminFeaturedTournaments';
+import { RoomCredentials } from './RoomCredentials';
+import { 
+  Users, 
+  Trophy, 
+  Calendar, 
+  Clock, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Save, 
+  X,
+  Settings,
+  Star,
+  Shield,
+  Key
+} from 'lucide-react';
 
-export type Database = {
-  public: {
-    Tables: {
-      featured_tournaments: {
-        Row: {
-          created_at: string | null
-          display_order: number | null
-          id: string
-          is_featured: boolean | null
-          tournament_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          is_featured?: boolean | null
-          tournament_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          is_featured?: boolean | null
-          tournament_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "featured_tournaments_tournament_id_fkey"
-            columns: ["tournament_id"]
-            isOneToOne: false
-            referencedRelation: "tournaments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      player_stats: {
-        Row: {
-          created_at: string
-          id: string
-          player_id: string | null
-          total_earnings: number
-          tournaments_played: number
-          tournaments_won: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          player_id?: string | null
-          total_earnings?: number
-          tournaments_played?: number
-          tournaments_won?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          player_id?: string | null
-          total_earnings?: number
-          tournaments_played?: number
-          tournaments_won?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "player_stats_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: true
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      players: {
-        Row: {
-          clerk_user_id: string
-          created_at: string | null
-          email: string
-          free_fire_uid: string | null
-          id: string
-          in_game_name: string | null
-          updated_at: string | null
-          username: string
-        }
-        Insert: {
-          clerk_user_id: string
-          created_at?: string | null
-          email: string
-          free_fire_uid?: string | null
-          id?: string
-          in_game_name?: string | null
-          updated_at?: string | null
-          username: string
-        }
-        Update: {
-          clerk_user_id?: string
-          created_at?: string | null
-          email?: string
-          free_fire_uid?: string | null
-          id?: string
-          in_game_name?: string | null
-          updated_at?: string | null
-          username?: string
-        }
-        Relationships: []
-      }
-      settings: {
-        Row: {
-          id: string
-          setting_key: string
-          setting_value: string
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          setting_key: string
-          setting_value: string
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          setting_key?: string
-          setting_value?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      tournament_registrations: {
-        Row: {
-          created_at: string | null
-          id: string
-          payment_status: string | null
-          player_id: string | null
-          slot_time: string
-          tournament_type: Database["public"]["Enums"]["tournament_type"]
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          payment_status?: string | null
-          player_id?: string | null
-          slot_time: string
-          tournament_type: Database["public"]["Enums"]["tournament_type"]
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          payment_status?: string | null
-          player_id?: string | null
-          slot_time?: string
-          tournament_type?: Database["public"]["Enums"]["tournament_type"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tournament_registrations_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tournament_status_log: {
-        Row: {
-          changed_at: string
-          changed_by: string | null
-          id: string
-          new_status: string | null
-          old_status: string | null
-          tournament_id: string | null
-        }
-        Insert: {
-          changed_at?: string
-          changed_by?: string | null
-          id?: string
-          new_status?: string | null
-          old_status?: string | null
-          tournament_id?: string | null
-        }
-        Update: {
-          changed_at?: string
-          changed_by?: string | null
-          id?: string
-          new_status?: string | null
-          old_status?: string | null
-          tournament_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tournament_status_log_tournament_id_fkey"
-            columns: ["tournament_id"]
-            isOneToOne: false
-            referencedRelation: "tournaments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tournaments: {
-        Row: {
-          admin_notes: string | null
-          created_at: string
-          entry_fee: number
-          id: string
-          max_participants: number
-          name: string
-          prize_pool: number
-          room_id: string | null
-          room_password: string | null
-          scheduled_date: string
-          scheduled_time: string
-          status: string
-          type: Database["public"]["Enums"]["tournament_type"]
-          updated_at: string
-        }
-        Insert: {
-          admin_notes?: string | null
-          created_at?: string
-          entry_fee: number
-          id?: string
-          max_participants?: number
-          name: string
-          prize_pool?: number
-          room_id?: string | null
-          room_password?: string | null
-          scheduled_date: string
-          scheduled_time: string
-          status?: string
-          type: Database["public"]["Enums"]["tournament_type"]
-          updated_at?: string
-        }
-        Update: {
-          admin_notes?: string | null
-          created_at?: string
-          entry_fee?: number
-          id?: string
-          max_participants?: number
-          name?: string
-          prize_pool?: number
-          room_id?: string | null
-          room_password?: string | null
-          scheduled_date?: string
-          scheduled_time?: string
-          status?: string
-          type?: Database["public"]["Enums"]["tournament_type"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      winners: {
-        Row: {
-          created_at: string | null
-          id: string
-          image_url: string | null
-          player_name: string
-          prize_amount: number | null
-          tournament_date: string | null
-          tournament_type: Database["public"]["Enums"]["tournament_type"]
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          player_name: string
-          prize_amount?: number | null
-          tournament_date?: string | null
-          tournament_type: Database["public"]["Enums"]["tournament_type"]
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          player_name?: string
-          prize_amount?: number | null
-          tournament_date?: string | null
-          tournament_type?: Database["public"]["Enums"]["tournament_type"]
-        }
-        Relationships: []
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      is_valid_clerk_user: {
-        Args: { clerk_id: string }
-        Returns: boolean
-      }
-    }
-    Enums: {
-      tournament_type: "solo" | "duo" | "squad"
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
+interface Tournament {
+  id: string;
+  name: string;
+  type: 'solo' | 'duo' | 'squad';
+  scheduled_date: string;
+  scheduled_time: string;
+  entry_fee: number;
+  prize_pool: number;
+  max_participants: number;
+  status: string;
+  room_id: string | null;
+  room_password: string | null;
+  admin_notes: string | null;
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+interface TournamentRegistration {
+  id: string;
+  player_id: string;
+  slot_time: string;
+  tournament_type: 'solo' | 'duo' | 'squad';
+  payment_status: string;
+  created_at: string;
+}
 
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+interface NewTournament {
+  name: string;
+  type: 'solo' | 'duo' | 'squad';
+  scheduled_date: string;
+  scheduled_time: string;
+  entry_fee: number;
+  prize_pool: number;
+  max_participants: number;
+}
+
+const initialNewTournament: NewTournament = {
+  name: '',
+  type: 'solo',
+  scheduled_date: new Date().toISOString().split('T')[0],
+  scheduled_time: '20:00',
+  entry_fee: 0,
+  prize_pool: 0,
+  max_participants: 50,
+};
+
+const TournamentWebsite = () => {
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [registrations, setRegistrations] = useState<TournamentRegistration[]>([]);
+  const [newTournament, setNewTournament] = useState<NewTournament>(initialNewTournament);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [isWinnerFormOpen, setIsWinnerFormOpen] = useState(false);
+  const [isRoomCredentialsOpen, setIsRoomCredentialsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const { featuredTournaments, featuredTemplates, loading: featuredLoading } = useFeaturedTournaments();
+
+  useEffect(() => {
+    fetchTournaments();
+    fetchRegistrations();
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    const user = supabase.auth.getUser();
+    if (!user) return;
+
+    // Fetch the user's data from the players table
+    const { data: playerData, error: playerError } = await supabase
+      .from('players')
+      .select('*')
+      .eq('clerk_user_id', (await user).data?.user?.id)
+      .single();
+
+    if (playerError) {
+      console.error('Error fetching player data:', playerError);
+      return;
     }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
 
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+    // Check if the user exists and has the is_admin flag set to true
+    setIsAdmin(playerData?.clerk_user_id === (await user).data?.user?.id);
+  };
+
+  const fetchTournaments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .select('*')
+        .order('scheduled_date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching tournaments:', error);
+        return;
+      }
+
+      setTournaments(data || []);
+    } catch (error) {
+      console.error('Error fetching tournaments:', error);
     }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  };
 
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+  const fetchRegistrations = async () => {
+    const { data, error } = await supabase
+      .from('tournament_registrations')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching registrations:', error);
+      return;
     }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+
+    setRegistrations(data || []);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewTournament(prevState => ({
+      ...prevState,
+      [name]: name === 'entry_fee' || name === 'prize_pool' || name === 'max_participants' ? parseFloat(value) : value
+    }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setNewTournament(prevState => ({
+      ...prevState,
+      type: value as 'solo' | 'duo' | 'squad'
+    }));
+  };
+
+  const addTournament = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .insert([newTournament]);
+
+      if (error) {
+        console.error('Error adding tournament:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create tournament. Please check the fields.",
+          variant: "destructive",
+        });
+        return;
       }
-      ? U
-      : never
-    : never
 
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+      toast({
+        title: "Success",
+        description: "Tournament created successfully.",
+      });
 
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+      fetchTournaments();
+      setNewTournament(initialNewTournament);
+    } catch (error) {
+      console.error('Error adding tournament:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create tournament.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-export const Constants = {
-  public: {
-    Enums: {
-      tournament_type: ["solo", "duo", "squad"],
-    },
-  },
-} as const
+  const deleteTournament = async (id: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('tournaments')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting tournament:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete tournament.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Tournament deleted successfully.",
+      });
+
+      fetchTournaments();
+    } catch (error) {
+      console.error('Error deleting tournament:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete tournament.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRoomCredentials = (tournament: Tournament) => {
+    setSelectedTournament(tournament);
+    setIsRoomCredentialsOpen(true);
+  };
+
+  const closeRoomCredentials = () => {
+    setIsRoomCredentialsOpen(false);
+    setSelectedTournament(null);
+  };
+
+  const openWinnerForm = (tournament: Tournament) => {
+    setSelectedTournament(tournament);
+    setIsWinnerFormOpen(true);
+  };
+
+  const closeWinnerForm = () => {
+    setIsWinnerFormOpen(false);
+    setSelectedTournament(null);
+  };
+
+  return (
+    <div className="container mx-auto py-10 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Tournament Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isAdmin ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Add New Tournament</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input type="text" id="name" name="name" value={newTournament.name} onChange={handleInputChange} />
+                </div>
+                <div>
+                  <Label htmlFor="type">Type</Label>
+                  <Select onValueChange={handleSelectChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="solo">Solo</SelectItem>
+                      <SelectItem value="duo">Duo</SelectItem>
+                      <SelectItem value="squad">Squad</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="scheduled_date">Scheduled Date</Label>
+                  <Input type="date" id="scheduled_date" name="scheduled_date" value={newTournament.scheduled_date} onChange={handleInputChange} />
+                </div>
+                <div>
+                  <Label htmlFor="scheduled_time">Scheduled Time</Label>
+                  <Input type="time" id="scheduled_time" name="scheduled_time" value={newTournament.scheduled_time} onChange={handleInputChange} />
+                </div>
+                <div>
+                  <Label htmlFor="entry_fee">Entry Fee</Label>
+                  <Input type="number" id="entry_fee" name="entry_fee" value={newTournament.entry_fee} onChange={handleInputChange} />
+                </div>
+                <div>
+                  <Label htmlFor="prize_pool">Prize Pool</Label>
+                  <Input type="number" id="prize_pool" name="prize_pool" value={newTournament.prize_pool} onChange={handleInputChange} />
+                </div>
+                <div>
+                  <Label htmlFor="max_participants">Max Participants</Label>
+                  <Input type="number" id="max_participants" name="max_participants" value={newTournament.max_participants} onChange={handleInputChange} />
+                </div>
+              </div>
+              <Button onClick={addTournament} disabled={loading}>
+                {loading ? 'Adding...' : 'Add Tournament'}
+              </Button>
+            </div>
+          ) : (
+            <p>Only admins can manage tournaments.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {isAdmin && (
+        <AdminFeaturedTournaments />
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Upcoming Tournaments
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {tournaments.length === 0 ? (
+            <p>No upcoming tournaments scheduled.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {tournaments.map((tournament) => (
+                <TournamentCard
+                  key={tournament.id}
+                  tournament={tournament}
+                  registrations={registrations}
+                  isAdmin={isAdmin}
+                  onDelete={deleteTournament}
+                  onOpenRoomCredentials={openRoomCredentials}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5" />
+            Featured Tournaments
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {featuredLoading ? (
+            <p>Loading featured tournaments...</p>
+          ) : featuredTournaments.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuredTournaments.map((tournament) => (
+                <TournamentCard
+                  key={tournament.id}
+                  tournament={tournament}
+                  registrations={registrations}
+                  isAdmin={isAdmin}
+                  onDelete={deleteTournament}
+                  onOpenRoomCredentials={openRoomCredentials}
+                />
+              ))}
+            </div>
+          ) : (
+            <p>No featured tournaments available.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+             Hall of Fame
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+           {isAdmin ? (
+              <Button onClick={() => openWinnerForm({} as Tournament)}>Add Winner</Button>
+           ) : null}
+        </CardContent>
+      </Card>
+
+      {isAdmin && (
+        <PlayerStatsDashboard />
+      )}
+
+      <AdminWinnerForm isOpen={isWinnerFormOpen} onClose={closeWinnerForm} tournament={selectedTournament} />
+      <RoomCredentials isOpen={isRoomCredentialsOpen} onClose={closeRoomCredentials} tournament={selectedTournament} />
+    </div>
+  );
+};
+
+export default TournamentWebsite;
