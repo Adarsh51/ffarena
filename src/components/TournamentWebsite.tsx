@@ -314,20 +314,22 @@ const TournamentWebsite = () => {
                     </div>
                     
                     <div className="flex items-center justify-center py-2">
-                      <div className="flex items-center space-x-2 text-orange-400">
-                        <Clock className="w-4 h-4" />
-                        <TournamentTimer 
-                          scheduledDate={tournament.scheduled_date} 
-                          scheduledTime={tournament.scheduled_time}
-                        />
-                      </div>
+                      <TournamentTimer 
+                        scheduledDate={tournament.scheduled_date} 
+                        scheduledTime={tournament.scheduled_time}
+                        status={tournament.status}
+                      />
                     </div>
 
-                    <RoomCredentials 
-                      roomId={tournament.room_id} 
-                      roomPassword={tournament.room_password}
-                      status={tournament.status}
-                    />
+                    {tournament.room_id && tournament.room_password && (
+                      <RoomCredentials 
+                        isOpen={false}
+                        onClose={() => {}}
+                        roomId={tournament.room_id}
+                        roomPassword={tournament.room_password}
+                        tournamentName={tournament.name}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -353,7 +355,7 @@ const TournamentWebsite = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="tournament-type" className="text-white">Tournament Type</Label>
-                    <Select value={tournamentType} onValueChange={setTournamentType}>
+                    <Select value={tournamentType} onValueChange={(value: 'solo' | 'duo' | 'squad') => setTournamentType(value)}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Select tournament type" />
                       </SelectTrigger>
@@ -412,7 +414,7 @@ const TournamentWebsite = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="admin-tournament-type" className="text-white">Tournament Type</Label>
-                        <Select value={adminForm.type} onValueChange={(value) => setAdminForm({...adminForm, type: value as 'solo' | 'duo' | 'squad'})}>
+                        <Select value={adminForm.type} onValueChange={(value: 'solo' | 'duo' | 'squad') => setAdminForm({...adminForm, type: value})}>
                           <SelectTrigger className="bg-white/10 border-white/20 text-white">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
