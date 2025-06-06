@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,21 +71,8 @@ const TournamentWebsite = () => {
     admin_notes: '',
   });
   const [registrations, setRegistrations] = useState<TournamentRegistration[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const { toast } = useToast();
-
-  const checkAdminStatus = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      // Replace with your actual admin check logic
-      const adminEmails = ['admin@example.com'];
-      setIsAdmin(user && adminEmails.includes(user.email || ''));
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-      setIsAdmin(false);
-    }
-  };
 
   const fetchTournaments = async () => {
     try {
@@ -231,18 +217,26 @@ const TournamentWebsite = () => {
       });
     }
   };
+
+  const isAdminUser = () => {
+    // Replace with your actual admin check logic
+    // For example, check against a list of admin emails or a specific role
+    const adminEmails = ['admin@example.com'];
+    // @ts-ignore
+    const user = supabase.auth.user();
+    return user && adminEmails.includes(user.email);
+  };
   
   useEffect(() => {
     fetchTournaments();
     fetchRegistrations();
-    checkAdminStatus();
   }, []);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdminUser()) {
       fetchRegistrations();
     }
-  }, [isAdmin]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -268,7 +262,7 @@ const TournamentWebsite = () => {
             <TabsTrigger value="tournaments" className="text-white data-[state=active]:bg-white/20">Tournaments</TabsTrigger>
             <TabsTrigger value="register" className="text-white data-[state=active]:bg-white/20">Register</TabsTrigger>
             <TabsTrigger value="credentials" className="text-white data-[state=active]:bg-white/20">Room Info</TabsTrigger>
-            {isAdmin && (
+            {isAdminUser() && (
               <>
                 <TabsTrigger value="admin" className="text-white data-[state=active]:bg-white/20">Admin</TabsTrigger>
                 <TabsTrigger value="winners" className="text-white data-[state=active]:bg-white/20">Winners</TabsTrigger>
@@ -320,22 +314,20 @@ const TournamentWebsite = () => {
                     </div>
                     
                     <div className="flex items-center justify-center py-2">
-                      <TournamentTimer 
-                        scheduledDate={tournament.scheduled_date} 
-                        scheduledTime={tournament.scheduled_time}
-                        status={tournament.status}
-                      />
+                      <div className="flex items-center space-x-2 text-orange-400">
+                        <Clock className="w-4 h-4" />
+                        <TournamentTimer 
+                          scheduledDate={tournament.scheduled_date} 
+                          scheduledTime={tournament.scheduled_time}
+                        />
+                      </div>
                     </div>
 
-                    {tournament.room_id && tournament.room_password && (
-                      <RoomCredentials 
-                        isOpen={false}
-                        onClose={() => {}}
-                        roomId={tournament.room_id}
-                        roomPassword={tournament.room_password}
-                        tournamentName={tournament.name}
-                      />
-                    )}
+                    <RoomCredentials 
+                      roomId={tournament.room_id} 
+                      roomPassword={tournament.room_password}
+                      status={tournament.status}
+                    />
                   </CardContent>
                 </Card>
               ))}
@@ -361,7 +353,7 @@ const TournamentWebsite = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="tournament-type" className="text-white">Tournament Type</Label>
-                    <Select value={tournamentType} onValueChange={(value: 'solo' | 'duo' | 'squad') => setTournamentType(value)}>
+                    <Select value={tournamentType} onValueChange={setTournamentType}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Select tournament type" />
                       </SelectTrigger>
@@ -398,7 +390,7 @@ const TournamentWebsite = () => {
             <PlayerTournamentCredentials />
           </TabsContent>
 
-          {isAdmin && (
+          {isAdminUser() && (
             <>
               <TabsContent value="admin" className="space-y-6">
                 <AdminTournamentPanel />
@@ -420,7 +412,7 @@ const TournamentWebsite = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="admin-tournament-type" className="text-white">Tournament Type</Label>
-                        <Select value={adminForm.type} onValueChange={(value: 'solo' | 'duo' | 'squad') => setAdminForm({...adminForm, type: value})}>
+                        <Select value={adminForm.type} onValueChange={(value) => setAdminForm({...adminForm, type: value as 'solo' | 'duo' | 'squad'})}>
                           <SelectTrigger className="bg-white/10 border-white/20 text-white">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
