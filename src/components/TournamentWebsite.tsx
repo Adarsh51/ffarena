@@ -239,15 +239,29 @@ const TournamentWebsite = () => {
     setSelectedTournament(null);
   };
 
-  const openWinnerForm = (tournament: Tournament) => {
-    setSelectedTournament(tournament);
+  const openWinnerForm = () => {
     setIsWinnerFormOpen(true);
   };
 
   const closeWinnerForm = () => {
     setIsWinnerFormOpen(false);
-    setSelectedTournament(null);
   };
+
+  // Convert featured tournaments to match local Tournament interface
+  const convertedFeaturedTournaments: Tournament[] = featuredTournaments.map(ft => ({
+    id: ft.id,
+    name: ft.name,
+    type: ft.type,
+    scheduled_date: ft.scheduled_date,
+    scheduled_time: ft.scheduled_time,
+    entry_fee: ft.entry_fee,
+    prize_pool: ft.prize_pool,
+    max_participants: ft.max_participants,
+    status: ft.status,
+    room_id: ft.room_id || null,
+    room_password: ft.room_password || null,
+    admin_notes: ft.admin_notes || null
+  }));
 
   return (
     <div className="container mx-auto py-10 space-y-6">
@@ -352,9 +366,9 @@ const TournamentWebsite = () => {
         <CardContent className="space-y-4">
           {featuredLoading ? (
             <p>Loading featured tournaments...</p>
-          ) : featuredTournaments.length > 0 ? (
+          ) : convertedFeaturedTournaments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {featuredTournaments.map((tournament) => (
+              {convertedFeaturedTournaments.map((tournament) => (
                 <TournamentCard
                   key={tournament.id}
                   tournament={tournament}
@@ -380,7 +394,7 @@ const TournamentWebsite = () => {
         </CardHeader>
         <CardContent>
            {isAdmin ? (
-              <Button onClick={() => openWinnerForm({} as Tournament)}>Add Winner</Button>
+              <Button onClick={openWinnerForm}>Add Winner</Button>
            ) : null}
         </CardContent>
       </Card>
@@ -389,7 +403,7 @@ const TournamentWebsite = () => {
         <PlayerStatsDashboard />
       )}
 
-      <AdminWinnerForm isOpen={isWinnerFormOpen} onClose={closeWinnerForm} tournament={selectedTournament} />
+      <AdminWinnerForm isOpen={isWinnerFormOpen} onClose={closeWinnerForm} />
       <RoomCredentials 
         isOpen={isRoomCredentialsOpen} 
         onClose={closeRoomCredentials} 
