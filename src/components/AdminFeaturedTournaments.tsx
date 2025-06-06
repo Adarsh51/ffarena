@@ -135,10 +135,13 @@ export const AdminFeaturedTournaments = () => {
         .select('*')
         .like('setting_key', 'featured_tournament_%');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading featured templates:', error);
+        return;
+      }
 
       // Update templates with saved values
-      const updatedTemplates = featuredTemplates.map(template => {
+      const updatedTemplates = defaultFeaturedTournaments.map(template => {
         const savedTemplate = data?.find(setting => 
           setting.setting_key === `featured_tournament_${template.id}`
         );
@@ -162,15 +165,24 @@ export const AdminFeaturedTournaments = () => {
 
   const saveFeaturedTemplate = async (template: FeaturedTournamentTemplate) => {
     try {
-      const { error } = await supabase
+      console.log('Saving template:', template);
+      
+      const { data, error } = await supabase
         .from('settings')
         .upsert({
           setting_key: `featured_tournament_${template.id}`,
-          setting_value: JSON.stringify(template),
-          updated_at: new Date().toISOString()
-        });
+          setting_value: JSON.stringify(template)
+        }, {
+          onConflict: 'setting_key'
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Save successful:', data);
 
       toast({
         title: "Success",
@@ -182,7 +194,7 @@ export const AdminFeaturedTournaments = () => {
       console.error('Error saving featured template:', error);
       toast({
         title: "Error",
-        description: "Failed to save featured tournament template",
+        description: `Failed to save featured tournament template: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
@@ -212,34 +224,42 @@ export const AdminFeaturedTournaments = () => {
   };
 
   const fetchTournaments = async () => {
-    const { data, error } = await supabase
-      .from('tournaments')
-      .select('*')
-      .order('scheduled_date', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .select('*')
+        .order('scheduled_date', { ascending: true });
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching tournaments:', error);
+        return;
+      }
+
+      setTournaments(data || []);
+    } catch (error) {
       console.error('Error fetching tournaments:', error);
-      return;
     }
-
-    setTournaments(data || []);
   };
 
   const fetchFeaturedTournaments = async () => {
-    const { data, error } = await supabase
-      .from('featured_tournaments')
-      .select(`
-        *,
-        tournaments:tournament_id (*)
-      `)
-      .order('display_order', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('featured_tournaments')
+        .select(`
+          *,
+          tournaments:tournament_id (*)
+        `)
+        .order('display_order', { ascending: true });
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching featured tournaments:', error);
+        return;
+      }
+
+      setFeaturedTournaments(data || []);
+    } catch (error) {
       console.error('Error fetching featured tournaments:', error);
-      return;
     }
-
-    setFeaturedTournaments(data || []);
   };
 
   const addFeaturedTournament = async () => {
@@ -253,10 +273,14 @@ export const AdminFeaturedTournaments = () => {
         .from('featured_tournaments')
         .insert({
           tournament_id: selectedTournament,
-          display_order: nextOrder
+          display_order: nextOrder,
+          is_featured: true
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error adding featured tournament:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -264,11 +288,12 @@ export const AdminFeaturedTournaments = () => {
       });
 
       setSelectedTournament('');
+      await fetchFeaturedTournaments();
     } catch (error) {
       console.error('Error adding featured tournament:', error);
       toast({
         title: "Error",
-        description: "Failed to add featured tournament",
+        description: `Failed to add featured tournament: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -283,17 +308,22 @@ export const AdminFeaturedTournaments = () => {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error removing featured tournament:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
         description: "Tournament removed from featured list",
       });
+
+      await fetchFeaturedTournaments();
     } catch (error) {
       console.error('Error removing featured tournament:', error);
       toast({
         title: "Error",
-        description: "Failed to remove featured tournament",
+        description: `Failed to remove featured tournament: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
@@ -428,7 +458,7 @@ export const AdminFeaturedTournaments = () => {
               onClick={addFeaturedTournament} 
               disabled={!selectedTournament || loading}
             >
-              Add Featured
+              {loading ? 'Adding...' : 'Add Featured'}
             </Button>
           </div>
 
