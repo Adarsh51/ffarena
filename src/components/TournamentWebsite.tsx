@@ -251,7 +251,7 @@ const TournamentWebsite = () => {
   const convertedFeaturedTournaments: Tournament[] = featuredTournaments.map(ft => ({
     id: ft.id,
     name: ft.name,
-    type: ft.type,
+    type: ft.type as 'solo' | 'duo' | 'squad',
     scheduled_date: ft.scheduled_date,
     scheduled_time: ft.scheduled_time,
     entry_fee: ft.entry_fee,
