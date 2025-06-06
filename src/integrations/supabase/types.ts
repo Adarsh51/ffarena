@@ -171,14 +171,52 @@ export type Database = {
           },
         ]
       }
+      tournament_status_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_status: string | null
+          old_status: string | null
+          tournament_id: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          tournament_id?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          tournament_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_status_log_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournaments: {
         Row: {
+          admin_notes: string | null
           created_at: string
           entry_fee: number
           id: string
           max_participants: number
           name: string
           prize_pool: number
+          room_id: string | null
+          room_password: string | null
           scheduled_date: string
           scheduled_time: string
           status: string
@@ -186,12 +224,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           entry_fee: number
           id?: string
           max_participants?: number
           name: string
           prize_pool?: number
+          room_id?: string | null
+          room_password?: string | null
           scheduled_date: string
           scheduled_time: string
           status?: string
@@ -199,12 +240,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           entry_fee?: number
           id?: string
           max_participants?: number
           name?: string
           prize_pool?: number
+          room_id?: string | null
+          room_password?: string | null
           scheduled_date?: string
           scheduled_time?: string
           status?: string

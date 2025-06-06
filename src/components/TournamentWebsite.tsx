@@ -1,46 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Moon, Sun, Trophy, Users, Clock, DollarSign, Settings, Download, Calendar, MessageSquare, Bell, FileText, BarChart3, Shield, CheckCircle, XCircle, Trash2, Search, Filter, Upload, Image } from 'lucide-react';
-import TournamentCard from './TournamentCard';
-import { useFeaturedTournaments } from '@/hooks/useFeaturedTournaments';
+import { Clock, Users, Trophy, DollarSign, Calendar, Gamepad2 } from 'lucide-react';
+import { TournamentTimer } from './TournamentTimer';
+import { RoomCredentials } from './RoomCredentials';
+import { AdminWinnerForm } from './AdminWinnerForm';
 import { AdminFeaturedTournaments } from './AdminFeaturedTournaments';
-
-interface Player {
-  id: string;
-  clerk_user_id: string;
-  username: string;
-  email: string;
-  in_game_name: string | null;
-  free_fire_uid: string | null;
-  created_at: string;
-}
-
-interface TournamentRegistration {
-  id: string;
-  player_id: string;
-  tournament_type: string;
-  slot_time: string;
-  payment_status: string;
-  created_at: string;
-  player: Player;
-}
-
-interface Winner {
-  id: string;
-  player_name: string;
-  tournament_type: string;
-  tournament_date: string;
-  image_url: string | null;
-}
+import { AdminTournamentPanel } from './AdminTournamentPanel';
+import { PlayerTournamentCredentials } from './PlayerTournamentCredentials';
 
 interface Tournament {
   id: string;
@@ -48,272 +23,60 @@ interface Tournament {
   type: 'solo' | 'duo' | 'squad';
   scheduled_date: string;
   scheduled_time: string;
-  max_participants: number;
-  entry_fee: number;
-  status: 'upcoming' | 'active' | 'completed';
   prize_pool: number;
-  room_id?: string;
-  room_password?: string;
+  entry_fee: number;
+  max_participants: number;
+  status: string;
+  room_id: string | null;
+  room_password: string | null;
+  admin_notes: string | null;
 }
 
-interface PlayerStats {
+interface TournamentRegistration {
+  id: string;
   player_id: string;
-  tournaments_played: number;
-  tournaments_won: number;
-  total_earnings: number;
+  tournament_type: 'solo' | 'duo' | 'squad';
+  slot_time: string;
+  payment_status: string | null;
+  player: {
+    username: string;
+    in_game_name: string | null;
+  } | null;
 }
 
-interface GameSettings {
-  entry_fee_solo: string;
-  entry_fee_duo: string;
-  entry_fee_squad: string;
-  upi_id: string;
+interface AdminFormState {
+  name: string;
+  type: 'solo' | 'duo' | 'squad';
+  scheduled_date: string;
+  scheduled_time: string;
+  prize_pool: number;
+  entry_fee: number;
+  max_participants: number;
+  admin_notes: string;
 }
-
-type TournamentType = 'solo' | 'duo' | 'squad';
 
 const TournamentWebsite = () => {
-  const { user, isSignedIn } = useUser();
-  const { signOut } = useAuth();
-  const { toast } = useToast();
-  const { featuredTemplates } = useFeaturedTournaments();
-  
-  // Theme state
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('ff-arena-theme');
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  // Player data state
-  const [playerProfile, setPlayerProfile] = useState<Player | null>(null);
-  const [isProfileComplete, setIsProfileComplete] = useState(false);
-  
-  // Form states
-  const [inGameName, setInGameName] = useState('');
-  const [freeFireUID, setFreeFireUID] = useState('');
-  const [tournamentType, setTournamentType] = useState<TournamentType | ''>('');
-  const [slotTime, setSlotTime] = useState('');
-  
-  // Modal states
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  
-  // Admin states
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
-  const [tournamentRegistrations, setTournamentRegistrations] = useState<TournamentRegistration[]>([]);
-  const [filteredRegistrations, setFilteredRegistrations] = useState<TournamentRegistration[]>([]);
-  const [winners, setWinners] = useState<Winner[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
-  const [settings, setSettings] = useState<GameSettings>({
-    entry_fee_solo: '50',
-    entry_fee_duo: '100',
-    entry_fee_squad: '150',
-    upi_id: 'ffarena@paytm'
-  });
-  const [newWinnerName, setNewWinnerName] = useState('');
-  const [newWinnerType, setNewWinnerType] = useState<TournamentType | ''>('');
-  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
-  const [winnerImage, setWinnerImage] = useState<File | null>(null);
-  const [userRegistrations, setUserRegistrations] = useState<TournamentRegistration[]>([]);
-
-  // Filter states
-  const [registrationFilter, setRegistrationFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [paymentFilter, setPaymentFilter] = useState('all');
-
-  // New tournament form states
-  const [newTournament, setNewTournament] = useState({
+  const [playerName, setPlayerName] = useState('');
+  const [tournamentType, setTournamentType] = useState<'solo' | 'duo' | 'squad'>('solo');
+  const [slotTime, setSlotTime] = useState('');
+  const [adminForm, setAdminForm] = useState<AdminFormState>({
     name: '',
-    type: '' as TournamentType | '',
+    type: 'solo',
     scheduled_date: '',
     scheduled_time: '',
-    max_participants: 50,
-    prize_pool: 1000
+    prize_pool: 0,
+    entry_fee: 0,
+    max_participants: 0,
+    admin_notes: '',
   });
+  const [registrations, setRegistrations] = useState<TournamentRegistration[]>([]);
 
-  // Use customized featured tournament templates from the hook
-  const featuredTournaments = featuredTemplates.map(template => ({
-    title: template.title,
-    type: template.type,
-    time: template.time,
-    entryFee: settings[`entry_fee_${template.type}` as keyof GameSettings],
-    prizePool: template.prizePool,
-    image: template.image,
-    maxPlayers: template.maxPlayers
-  }));
+  const { toast } = useToast();
 
-  // Load theme and data on mount
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-    // Load winners for all users regardless of sign-in status
-    loadWinners();
-    loadSettings();
-    loadTournaments();
-    if (isSignedIn && user) {
-      loadPlayerProfile();
-      loadPlayerStats();
-    }
-  }, [isSignedIn, user, isDarkMode]);
-
-  // Save theme to localStorage
-  useEffect(() => {
-    localStorage.setItem('ff-arena-theme', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
-
-  // Filter registrations based on search and filters
-  useEffect(() => {
-    let filtered = tournamentRegistrations;
-
-    if (searchTerm) {
-      filtered = filtered.filter(reg => 
-        reg.player.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        reg.player.in_game_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        reg.player.free_fire_uid?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        reg.player.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (registrationFilter !== 'all') {
-      filtered = filtered.filter(reg => reg.tournament_type === registrationFilter);
-    }
-
-    if (paymentFilter !== 'all') {
-      filtered = filtered.filter(reg => reg.payment_status === paymentFilter);
-    }
-
-    setFilteredRegistrations(filtered);
-  }, [tournamentRegistrations, searchTerm, registrationFilter, paymentFilter]);
-
-  // Load player profile from Supabase
-  const loadPlayerProfile = async () => {
-    if (!user) return;
-    
-    console.log('Loading profile for user:', user.id);
-    
+  const fetchTournaments = async () => {
     try {
       const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('clerk_user_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error loading player profile:', error);
-        throw error;
-      }
-
-      if (data) {
-        console.log('Found existing player:', data);
-        setPlayerProfile(data);
-        setIsProfileComplete(!!(data.in_game_name && data.free_fire_uid));
-        setInGameName(data.in_game_name || '');
-        setFreeFireUID(data.free_fire_uid || '');
-      } else {
-        console.log('No existing player found, creating new one');
-        const { data: created, error: createError } = await supabase
-          .from('players')
-          .insert([{
-            clerk_user_id: user.id,
-            username: user.username || user.firstName || 'Player',
-            email: user.primaryEmailAddress?.emailAddress || '',
-            in_game_name: null,
-            free_fire_uid: null
-          }])
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating player:', createError);
-          toast({
-            title: "Setup Required",
-            description: "Account setup is temporarily unavailable. Please try refreshing the page.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        console.log('Created new player:', created);
-        setPlayerProfile(created);
-      }
-    } catch (error) {
-      console.error('Error in loadPlayerProfile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load player profile. Please refresh the page.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Load tournament registrations with player details
-  const loadTournamentRegistrations = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('tournament_registrations')
-        .select(`
-          *,
-          player:players(*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setTournamentRegistrations(data || []);
-    } catch (error) {
-      console.error('Error loading tournament registrations:', error);
-    }
-  };
-
-  // Load winners from Supabase - make this work for all users
-  const loadWinners = async () => {
-    try {
-      console.log('Loading winners...');
-      const { data, error } = await supabase
-        .from('winners')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) {
-        console.error('Error loading winners:', error);
-        // Don't throw error, just log it and continue
-        setWinners([]);
-        return;
-      }
-      
-      console.log('Winners loaded:', data);
-      setWinners(data || []);
-    } catch (error) {
-      console.error('Error in loadWinners:', error);
-      setWinners([]);
-    }
-  };
-
-  // Load settings from Supabase
-  const loadSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*');
-
-      if (error) throw error;
-
-      const settingsObj: any = {};
-      data?.forEach(setting => {
-        settingsObj[setting.setting_key] = setting.setting_value;
-      });
-      setSettings(prev => ({ ...prev, ...settingsObj }));
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
-
-  // Load tournaments - using any type to bypass TypeScript issues until types are regenerated
-  const loadTournaments = async () => {
-    try {
-      const { data, error } = await (supabase as any)
         .from('tournaments')
         .select('*')
         .order('scheduled_date', { ascending: true });
@@ -321,1427 +84,460 @@ const TournamentWebsite = () => {
       if (error) throw error;
       setTournaments(data || []);
     } catch (error) {
-      console.error('Error loading tournaments:', error);
+      console.error('Error fetching tournaments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch tournaments",
+        variant: "destructive",
+      });
     }
   };
 
-  // Load player statistics - using any type to bypass TypeScript issues until types are regenerated
-  const loadPlayerStats = async () => {
-    try {
-      const { data, error } = await (supabase as any)
-        .from('player_stats')
-        .select('*');
-
-      if (error) throw error;
-      setPlayerStats(data || []);
-    } catch (error) {
-      console.error('Error loading player stats:', error);
-    }
-  };
-
-  // Load user's registrations
-  const loadUserRegistrations = async () => {
-    if (!playerProfile) return;
-    
+  const fetchRegistrations = async () => {
     try {
       const { data, error } = await supabase
         .from('tournament_registrations')
-        .select('*')
-        .eq('player_id', playerProfile.id)
-        .eq('payment_status', 'completed');
+        .select(`
+          *,
+          player:players(username, in_game_name)
+        `);
 
       if (error) throw error;
-      setUserRegistrations(data || []);
+      setRegistrations(data || []);
     } catch (error) {
-      console.error('Error loading user registrations:', error);
+      console.error('Error fetching registrations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch registrations",
+        variant: "destructive",
+      });
     }
   };
 
-  // Add useEffect to load user registrations when player profile is loaded
-  useEffect(() => {
-    if (playerProfile) {
-      loadUserRegistrations();
-    }
-  }, [playerProfile]);
-
-  // Create new tournament
-  const createTournament = async () => {
-    if (!newTournament.name || !newTournament.type || !newTournament.scheduled_date || !newTournament.scheduled_time) {
+  const handleRegistration = async () => {
+    if (!playerName || !slotTime) {
       toast({
         title: "Error",
-        description: "Please fill in all tournament details",
-        variant: "destructive"
+        description: "Please fill in all fields",
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      const entryFeeKey = `entry_fee_${newTournament.type}` as keyof GameSettings;
-      const entryFee = parseInt(settings[entryFeeKey]);
-
-      const { data, error } = await (supabase as any)
-        .from('tournaments')
-        .insert([{
-          name: newTournament.name,
-          type: newTournament.type,
-          scheduled_date: newTournament.scheduled_date,
-          scheduled_time: newTournament.scheduled_time,
-          max_participants: newTournament.max_participants,
-          entry_fee: entryFee,
-          status: 'upcoming',
-          prize_pool: newTournament.prize_pool,
-          room_id: Math.random().toString(36).substring(2, 8).toUpperCase(),
-          room_password: Math.random().toString(36).substring(2, 8).toUpperCase()
-        }])
-        .select()
+      const { data: playerData, error: playerError } = await supabase
+        .from('players')
+        .select('id')
+        .eq('username', playerName)
         .single();
+
+      if (playerError) throw playerError;
+
+      let playerId;
+      if (playerData) {
+        playerId = playerData.id;
+      } else {
+        // If player doesn't exist, create a new player
+        const { data: newPlayerData, error: newPlayerError } = await supabase
+          .from('players')
+          .insert({ username: playerName, email: `${playerName.replace(/\s/g, '')}@example.com`, clerk_user_id: 'null' })
+          .select('id')
+          .single();
+
+        if (newPlayerError) throw newPlayerError;
+        playerId = newPlayerData.id;
+      }
+
+      const { data, error } = await supabase
+        .from('tournament_registrations')
+        .insert({
+          player_id: playerId,
+          tournament_type: tournamentType,
+          slot_time: slotTime,
+        });
 
       if (error) throw error;
 
-      setNewTournament({
-        name: '',
-        type: '',
-        scheduled_date: '',
-        scheduled_time: '',
-        max_participants: 50,
-        prize_pool: 1000
-      });
-      
-      await loadTournaments();
       toast({
         title: "Success",
-        description: "Tournament created successfully!"
+        description: "Registered for tournament!",
       });
+      fetchRegistrations();
+    } catch (error) {
+      console.error('Error registering for tournament:', error);
+      toast({
+        title: "Error",
+        description: "Failed to register for tournament",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAdminSubmit = async () => {
+    try {
+      const { error } = await supabase
+        .from('tournaments')
+        .insert({
+          name: adminForm.name,
+          type: adminForm.type,
+          scheduled_date: adminForm.scheduled_date,
+          scheduled_time: adminForm.scheduled_time,
+          prize_pool: adminForm.prize_pool,
+          entry_fee: adminForm.entry_fee,
+          max_participants: adminForm.max_participants,
+          admin_notes: adminForm.admin_notes,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Tournament created successfully!",
+      });
+
+      // Clear the form
+      setAdminForm({
+        name: '',
+        type: 'solo',
+        scheduled_date: '',
+        scheduled_time: '',
+        prize_pool: 0,
+        entry_fee: 0,
+        max_participants: 0,
+        admin_notes: '',
+      });
+
+      fetchTournaments();
     } catch (error) {
       console.error('Error creating tournament:', error);
       toast({
         title: "Error",
         description: "Failed to create tournament",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  // Save player profile
-  const savePlayerProfile = async () => {
-    console.log('Attempting to save profile:', { inGameName, freeFireUID, playerProfile });
-    
-    if (!inGameName.trim() || !freeFireUID.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!playerProfile) {
-      toast({
-        title: "Error",
-        description: "Player profile not found. Please refresh the page.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('players')
-        .update({
-          in_game_name: inGameName.trim(),
-          free_fire_uid: freeFireUID.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('clerk_user_id', user?.id);
-
-      if (error) {
-        console.error('Update error:', error);
-        throw error;
-      }
-
-      setIsProfileComplete(true);
-      toast({
-        title: "Success",
-        description: "Profile updated successfully!"
-      });
-      
-      await loadPlayerProfile();
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save profile. Please try again.",
-        variant: "destructive"
-      });
-    }
+  const isAdminUser = () => {
+    // Replace with your actual admin check logic
+    // For example, check against a list of admin emails or a specific role
+    const adminEmails = ['admin@example.com'];
+    // @ts-ignore
+    const user = supabase.auth.user();
+    return user && adminEmails.includes(user.email);
   };
+  
+  useEffect(() => {
+    fetchTournaments();
+    fetchRegistrations();
+  }, []);
 
-  // Simplified tournament registration
-  const handleTournamentRegistration = async (tournament: Tournament) => {
-    console.log('Attempting to register for tournament:', tournament);
-    
-    if (!isSignedIn) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to register for tournaments",
-        variant: "destructive"
-      });
-      return;
+  useEffect(() => {
+    if (isAdminUser()) {
+      fetchRegistrations();
     }
-
-    if (!playerProfile || !isProfileComplete) {
-      toast({
-        title: "Profile Incomplete",
-        description: "Please complete your profile first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setSelectedTournament(tournament);
-    setIsPaymentModalOpen(true);
-  };
-
-  // Handle featured tournament registration
-  const handleFeaturedTournamentRegistration = (tournamentType: TournamentType) => {
-    console.log('Attempting to register for featured tournament:', tournamentType);
-    
-    if (!isSignedIn) {
-      toast({
-        title: "Authentication Required", 
-        description: "Please sign in to register for tournaments",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!playerProfile || !isProfileComplete) {
-      toast({
-        title: "Profile Incomplete",
-        description: "Please complete your profile first", 
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Create a temporary tournament object for featured tournaments
-    const tempTournament: Tournament = {
-      id: `featured-${tournamentType}`,
-      name: `Featured ${tournamentType.charAt(0).toUpperCase() + tournamentType.slice(1)} Tournament`,
-      type: tournamentType,
-      scheduled_date: new Date().toISOString().split('T')[0],
-      scheduled_time: '20:00',
-      max_participants: 100,
-      entry_fee: parseInt(settings[`entry_fee_${tournamentType}` as keyof GameSettings]),
-      status: 'upcoming',
-      prize_pool: tournamentType === 'solo' ? 5000 : tournamentType === 'duo' ? 10000 : 25000
-    };
-
-    setSelectedTournament(tempTournament);
-    setIsPaymentModalOpen(true);
-  };
-
-  // Handle payment completion
-  const handlePaymentComplete = async () => {
-    if (!playerProfile || !selectedTournament) {
-      toast({
-        title: "Error",
-        description: "Missing player or tournament information",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      console.log('Completing payment for:', selectedTournament);
-      
-      const { error } = await supabase
-        .from('tournament_registrations')
-        .insert([{
-          player_id: playerProfile.id,
-          tournament_type: selectedTournament.type,
-          slot_time: `${selectedTournament.scheduled_date} ${selectedTournament.scheduled_time}`,
-          payment_status: 'pending'
-        }]);
-
-      if (error) {
-        console.error('Registration error:', error);
-        throw error;
-      }
-
-      setIsPaymentModalOpen(false);
-      setSelectedTournament(null);
-      
-      toast({
-        title: "Registration Submitted!",
-        description: "Your tournament registration has been submitted. Payment verification pending.",
-      });
-    } catch (error) {
-      console.error('Error completing registration:', error);
-      toast({
-        title: "Registration Failed",
-        description: "Failed to complete registration. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Handle admin login with form submission prevention
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (adminPassword === 'Admin123!') {
-      setIsAdminMode(true);
-      setIsAdminModalOpen(false);
-      loadAllPlayers();
-      loadTournamentRegistrations();
-      setAdminPassword('');
-      toast({
-        title: "Success",
-        description: "Admin access granted"
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Invalid admin password",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const loadAllPlayers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setAllPlayers(data || []);
-    } catch (error) {
-      console.error('Error loading all players:', error);
-    }
-  };
-
-  const removePlayer = async (playerId: string) => {
-    try {
-      const { error } = await supabase
-        .from('players')
-        .delete()
-        .eq('id', playerId);
-
-      if (error) throw error;
-      
-      await loadAllPlayers();
-      toast({
-        title: "Success",
-        description: "Player removed successfully"
-      });
-    } catch (error) {
-      console.error('Error removing player:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove player",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const updateSettings = async (key: string, value: string) => {
-    try {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({ setting_key: key, setting_value: value, updated_at: new Date().toISOString() });
-
-      if (error) throw error;
-      
-      await loadSettings();
-      toast({
-        title: "Success",
-        description: "Settings updated successfully"
-      });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update settings",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Fixed addWinner function to handle RLS properly
-  const addWinner = async () => {
-    if (!newWinnerName || !newWinnerType) {
-      toast({
-        title: "Error",
-        description: "Please fill in winner details",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      let imageUrl = null;
-      
-      if (winnerImage) {
-        imageUrl = await uploadWinnerImage(winnerImage);
-        if (!imageUrl) {
-          toast({
-            title: "Error", 
-            description: "Failed to upload winner image",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-
-      console.log('Adding winner:', { newWinnerName, newWinnerType, imageUrl });
-
-      // Use INSERT with proper data structure
-      const { data, error } = await supabase
-        .from('winners')
-        .insert({
-          player_name: newWinnerName,
-          tournament_type: newWinnerType,
-          tournament_date: new Date().toISOString(),
-          image_url: imageUrl
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error adding winner:', error);
-        throw error;
-      }
-
-      console.log('Winner added successfully:', data);
-
-      setNewWinnerName('');
-      setNewWinnerType('');
-      setWinnerImage(null);
-      await loadWinners();
-      
-      toast({
-        title: "Success",
-        description: "Winner added successfully!"
-      });
-    } catch (error) {
-      console.error('Error adding winner:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add winner. Please check your permissions.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const uploadWinnerImage = async (file: File) => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `winner-image-${Date.now()}.${fileExt}`;
-      const { data, error } = await supabase
-        .storage
-        .from('winner-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) {
-        console.error('Error uploading winner image:', error);
-        return null;
-      }
-
-      if (data) {
-        console.log('Winner image uploaded:', data);
-        return data.path;
-      }
-    } catch (error) {
-      console.error('Error in uploadWinnerImage:', error);
-      return null;
-    }
-  };
-
-  // Export players as CSV
-  const exportPlayersCSV = () => {
-    const csvContent = [
-      ['Username', 'Email', 'In-Game Name', 'Free Fire UID', 'Created At'].join(','),
-      ...allPlayers.map(player => [
-        player.username,
-        player.email,
-        player.in_game_name || '',
-        player.free_fire_uid || '',
-        new Date(player.created_at).toLocaleDateString()
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ff-arena-players.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
-  // Export registrations as CSV
-  const exportRegistrationsCSV = () => {
-    const csvContent = [
-      ['Player Name', 'Email', 'In-Game Name', 'Free Fire UID', 'Tournament Type', 'Slot Time', 'Payment Status', 'Registration Date'].join(','),
-      ...filteredRegistrations.map(reg => [
-        reg.player.username,
-        reg.player.email,
-        reg.player.in_game_name || '',
-        reg.player.free_fire_uid || '',
-        reg.tournament_type,
-        reg.slot_time,
-        reg.payment_status,
-        new Date(reg.created_at).toLocaleDateString()
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tournament-registrations.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
-  // Update payment status
-  const updatePaymentStatus = async (registrationId: string, status: string) => {
-    try {
-      const { error } = await supabase
-        .from('tournament_registrations')
-        .update({ payment_status: status })
-        .eq('id', registrationId);
-
-      if (error) throw error;
-
-      await loadTournamentRegistrations();
-      toast({
-        title: "Success",
-        description: `Payment status updated to ${status}`,
-      });
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update payment status",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Delete registration
-  const deleteRegistration = async (registrationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('tournament_registrations')
-        .delete()
-        .eq('id', registrationId);
-
-      if (error) throw error;
-
-      await loadTournamentRegistrations();
-      toast({
-        title: "Success",
-        description: "Registration deleted successfully",
-      });
-    } catch (error) {
-      console.error('Error deleting registration:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete registration",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Function to check if user has completed payment for a tournament
-  const hasCompletedPayment = (tournamentType: string) => {
-    return userRegistrations.some(reg => 
-      reg.tournament_type === tournamentType && reg.payment_status === 'completed'
-    );
-  };
+  }, []);
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {/* Header - Made more mobile-friendly */}
-      <header className="morph-container sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-800/80 border-b border-gray-200/50 dark:border-gray-700/50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Trophy className="h-6 w-6 md:h-8 md:w-8 text-orange-500" />
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-              FF Arena
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-2 md:space-x-4">
-            {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="morph-button h-9 w-9 md:h-10 md:w-10"
-            >
-              {isDarkMode ? <Sun className="h-4 w-4 md:h-5 md:w-5" /> : <Moon className="h-4 w-4 md:h-5 md:w-5" />}
-            </Button>
-
-            {/* Admin Button - Mobile optimized */}
-            {!isAdminMode && (
-              <Dialog open={isAdminModalOpen} onOpenChange={setIsAdminModalOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="morph-button text-sm md:text-base px-2 md:px-4">
-                    <Settings className="h-4 w-4 mr-1 md:mr-2" />
-                    <span className="hidden sm:inline">Admin</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="w-[95vw] max-w-md mx-auto">
-                  <DialogHeader>
-                    <DialogTitle>Admin Login</DialogTitle>
-                    <DialogDescription>
-                      Enter the admin password to access the admin panel.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleAdminLogin} className="space-y-4">
-                    <div>
-                      <Input
-                        type="password"
-                        placeholder="Enter admin password"
-                        value={adminPassword}
-                        onChange={(e) => setAdminPassword(e.target.value)}
-                        className="morph-input"
-                        autoComplete="current-password"
-                      />
-                    </div>
-                    <Button type="submit" className="morph-button w-full">
-                      Login
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            )}
-
-            {/* Authentication - Mobile optimized */}
-            {isSignedIn ? (
-              <div className="flex items-center space-x-2 md:space-x-3">
-                <span className="text-xs md:text-sm font-medium hidden sm:block">
-                  Welcome, {user?.username || user?.firstName}!
-                </span>
-                <UserButton />
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      <header className="bg-black/20 backdrop-blur-md border-b border-white/10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                <Gamepad2 className="w-6 h-6 text-white" />
               </div>
-            ) : (
-              <div className="flex items-center space-x-1 md:space-x-2">
-                <SignInButton>
-                  <Button variant="outline" className="morph-button text-xs md:text-sm px-2 md:px-4">
-                    Sign In
-                  </Button>
-                </SignInButton>
-                <SignUpButton>
-                  <Button className="morph-button text-xs md:text-sm px-2 md:px-4">
-                    Sign Up
-                  </Button>
-                </SignUpButton>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Free Fire Tournaments</h1>
+                <p className="text-blue-200 text-sm">Compete. Win. Dominate.</p>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
-        {isSignedIn ? (
-          <>
-            {/* Player Profile Section - Mobile optimized */}
-            {!isProfileComplete && (
-              <Card className="morph-container">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                    <Users className="h-4 w-4 md:h-5 md:w-5" />
-                    <span>Complete Your Profile</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <Label htmlFor="inGameName" className="text-sm font-medium">In-Game Name</Label>
-                      <Input
-                        id="inGameName"
-                        value={inGameName}
-                        onChange={(e) => setInGameName(e.target.value)}
-                        placeholder="Enter your Free Fire in-game name"
-                        className="morph-input mt-1"
+      <main className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="tournaments" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 bg-black/20 backdrop-blur-md border border-white/10">
+            <TabsTrigger value="tournaments" className="text-white data-[state=active]:bg-white/20">Tournaments</TabsTrigger>
+            <TabsTrigger value="register" className="text-white data-[state=active]:bg-white/20">Register</TabsTrigger>
+            <TabsTrigger value="credentials" className="text-white data-[state=active]:bg-white/20">Room Info</TabsTrigger>
+            {isAdminUser() && (
+              <>
+                <TabsTrigger value="admin" className="text-white data-[state=active]:bg-white/20">Admin</TabsTrigger>
+                <TabsTrigger value="winners" className="text-white data-[state=active]:bg-white/20">Winners</TabsTrigger>
+                <TabsTrigger value="featured" className="text-white data-[state=active]:bg-white/20">Featured</TabsTrigger>
+              </>
+            )}
+          </TabsList>
+
+          <TabsContent value="tournaments" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {tournaments.map((tournament) => (
+                <Card key={tournament.id} className="bg-black/40 backdrop-blur-md border border-white/20 text-white overflow-hidden group hover:border-white/40 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-xl text-white group-hover:text-orange-300 transition-colors">
+                          {tournament.name}
+                        </CardTitle>
+                        <Badge variant="outline" className="mt-2 border-orange-500 text-orange-400 bg-orange-500/10">
+                          {tournament.type.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <Badge 
+                        variant={tournament.status === 'upcoming' ? 'default' : tournament.status === 'ongoing' ? 'destructive' : 'secondary'}
+                        className="capitalize"
+                      >
+                        {tournament.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <Trophy className="w-4 h-4 text-yellow-400" />
+                        <span>₹{tournament.prize_pool}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <DollarSign className="w-4 h-4 text-green-400" />
+                        <span>₹{tournament.entry_fee}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Users className="w-4 h-4 text-blue-400" />
+                        <span>{tournament.max_participants} slots</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4 text-purple-400" />
+                        <span>{tournament.scheduled_date}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-center py-2">
+                      <div className="flex items-center space-x-2 text-orange-400">
+                        <Clock className="w-4 h-4" />
+                        <TournamentTimer 
+                          scheduledDate={tournament.scheduled_date} 
+                          scheduledTime={tournament.scheduled_time}
+                        />
+                      </div>
+                    </div>
+
+                    <RoomCredentials 
+                      roomId={tournament.room_id} 
+                      roomPassword={tournament.room_password}
+                      status={tournament.status}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="register" className="space-y-6">
+            <Card className="bg-black/40 backdrop-blur-md border border-white/20 text-white">
+              <CardHeader>
+                <CardTitle className="text-2xl text-center text-white">Tournament Registration</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="player-name" className="text-white">Player Name</Label>
+                    <Input
+                      id="player-name"
+                      placeholder="Enter your in-game name"
+                      value={playerName}
+                      onChange={(e) => setPlayerName(e.target.value)}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tournament-type" className="text-white">Tournament Type</Label>
+                    <Select value={tournamentType} onValueChange={setTournamentType}>
+                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                        <SelectValue placeholder="Select tournament type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solo">Solo</SelectItem>
+                        <SelectItem value="duo">Duo</SelectItem>
+                        <SelectItem value="squad">Squad</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="slot-time" className="text-white">Preferred Slot Time</Label>
+                    <Input
+                      id="slot-time"
+                      type="time"
+                      value={slotTime}
+                      onChange={(e) => setSlotTime(e.target.value)}
+                      className="bg-white/10 border-white/20 text-white"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleRegistration} 
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3"
+                  disabled={!playerName || !slotTime}
+                >
+                  Register for Tournament
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="credentials">
+            <PlayerTournamentCredentials />
+          </TabsContent>
+
+          {isAdminUser() && (
+            <>
+              <TabsContent value="admin" className="space-y-6">
+                <AdminTournamentPanel />
+                <Card className="bg-black/40 backdrop-blur-md border border-white/20 text-white">
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-white">Admin Panel</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-tournament-name" className="text-white">Tournament Name</Label>
+                        <Input
+                          id="admin-tournament-name"
+                          placeholder="Enter tournament name"
+                          value={adminForm.name}
+                          onChange={(e) => setAdminForm({...adminForm, name: e.target.value})}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-tournament-type" className="text-white">Tournament Type</Label>
+                        <Select value={adminForm.type} onValueChange={(value) => setAdminForm({...adminForm, type: value as 'solo' | 'duo' | 'squad'})}>
+                          <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="solo">Solo</SelectItem>
+                            <SelectItem value="duo">Duo</SelectItem>
+                            <SelectItem value="squad">Squad</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-entry-fee" className="text-white">Entry Fee (₹)</Label>
+                        <Input
+                          id="admin-entry-fee"
+                          type="number"
+                          placeholder="Entry fee"
+                          value={adminForm.entry_fee}
+                          onChange={(e) => setAdminForm({...adminForm, entry_fee: parseInt(e.target.value) || 0})}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-prize-pool" className="text-white">Prize Pool (₹)</Label>
+                        <Input
+                          id="admin-prize-pool"
+                          type="number"
+                          placeholder="Prize pool"
+                          value={adminForm.prize_pool}
+                          onChange={(e) => setAdminForm({...adminForm, prize_pool: parseInt(e.target.value) || 0})}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-max-participants" className="text-white">Max Participants</Label>
+                        <Input
+                          id="admin-max-participants"
+                          type="number"
+                          placeholder="Max participants"
+                          value={adminForm.max_participants}
+                          onChange={(e) => setAdminForm({...adminForm, max_participants: parseInt(e.target.value) || 0})}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-scheduled-date" className="text-white">Scheduled Date</Label>
+                        <Input
+                          id="admin-scheduled-date"
+                          type="date"
+                          value={adminForm.scheduled_date}
+                          onChange={(e) => setAdminForm({...adminForm, scheduled_date: e.target.value})}
+                          className="bg-white/10 border-white/20 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-scheduled-time" className="text-white">Scheduled Time</Label>
+                        <Input
+                          id="admin-scheduled-time"
+                          type="time"
+                          value={adminForm.scheduled_time}
+                          onChange={(e) => setAdminForm({...adminForm, scheduled_time: e.target.value})}
+                          className="bg-white/10 border-white/20 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-notes" className="text-white">Admin Notes</Label>
+                      <Textarea
+                        id="admin-notes"
+                        placeholder="Additional notes for the tournament"
+                        value={adminForm.admin_notes}
+                        onChange={(e) => setAdminForm({...adminForm, admin_notes: e.target.value})}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="freeFireUID" className="text-sm font-medium">Free Fire UID</Label>
-                      <Input
-                        id="freeFireUID"
-                        value={freeFireUID}
-                        onChange={(e) => setFreeFireUID(e.target.value)}
-                        placeholder="Enter your Free Fire UID"
-                        className="morph-input mt-1"
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={savePlayerProfile} className="morph-button w-full">
-                    Save Profile
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
 
-            {/* Featured Tournament Cards - Updated with timer and room credentials */}
-            {isProfileComplete && !isAdminMode && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-2">Featured Tournaments</h2>
-                  <p className="text-gray-600 dark:text-gray-300">Join the action and compete for amazing prizes!</p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredTournaments.map((tournament, index) => (
-                    <div key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <TournamentCard
-                        {...tournament}
-                        onRegister={() => handleFeaturedTournamentRegistration(tournament.type)}
-                        userHasCompletedPayment={hasCompletedPayment(tournament.type)}
-                        roomId={`ROOM${index + 1}`}
-                        roomPassword={`PASS${index + 1}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    <Button 
+                      onClick={handleAdminSubmit} 
+                      className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold py-3"
+                      disabled={!adminForm.name || !adminForm.scheduled_date || !adminForm.scheduled_time}
+                    >
+                      Create Tournament
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            {/* Upcoming Tournaments - Updated with timer and room credentials */}
-            {isProfileComplete && !isAdminMode && tournaments.length > 0 && (
-              <Card className="morph-container">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Calendar className="h-5 w-5" />
-                    <span>Scheduled Tournaments</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tournaments.filter(t => t.status === 'upcoming').map((tournament) => (
-                      <TournamentCard
-                        key={tournament.id}
-                        title={tournament.name}
-                        type={tournament.type}
-                        time={`${tournament.scheduled_date} ${tournament.scheduled_time}`}
-                        entryFee={tournament.entry_fee.toString()}
-                        prizePool={tournament.prize_pool.toString()}
-                        image="photo-1542751371-adc38448a05e"
-                        maxPlayers={tournament.max_participants}
-                        onRegister={() => handleTournamentRegistration(tournament)}
-                        scheduledDate={tournament.scheduled_date}
-                        scheduledTime={tournament.scheduled_time}
-                        status={tournament.status}
-                        roomId={tournament.room_id || ''}
-                        roomPassword={tournament.room_password || ''}
-                        userHasCompletedPayment={hasCompletedPayment(tournament.type)}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Player Statistics */}
-            {isProfileComplete && !isAdminMode && playerProfile && (
-              <Card className="morph-container">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    <span>Your Statistics</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {(() => {
-                      const stats = playerStats.find(s => s.player_id === playerProfile.id) || {
-                        tournaments_played: 0,
-                        tournaments_won: 0,
-                        total_earnings: 0
-                      };
-                      return (
-                        <>
-                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="text-2xl font-bold text-blue-500">{stats.tournaments_played}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Tournaments Played</p>
+                {/* Registration Management */}
+                <Card className="bg-black/40 backdrop-blur-md border border-white/20 text-white">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-white">Registration Management</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {registrations.map((registration) => (
+                        <div key={registration.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                          <div className="space-y-1">
+                            <p className="font-medium">{registration.player?.username || 'Unknown Player'}</p>
+                            <p className="text-sm text-white/70">
+                              Type: {registration.tournament_type} | Time: {registration.slot_time}
+                            </p>
                           </div>
-                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="text-2xl font-bold text-green-500">{stats.tournaments_won}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Tournaments Won</p>
-                          </div>
-                          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="text-2xl font-bold text-yellow-500">₹{stats.total_earnings}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Total Earnings</p>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Admin Panel */}
-            {isAdminMode && (
-              <div className="container mx-auto px-4 py-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">Admin Panel</h2>
-                  <Button onClick={() => setIsAdminMode(false)} variant="outline">
-                    Exit Admin Mode
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                  <Card className="morph-container">
-                    <CardContent className="p-4 text-center">
-                      <Users className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold">{allPlayers.length}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Players</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="morph-container">
-                    <CardContent className="p-4 text-center">
-                      <FileText className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold">{tournamentRegistrations.length}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Registrations</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="morph-container">
-                    <CardContent className="p-4 text-center">
-                      <Calendar className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold">{tournaments.length}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Tournaments</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="morph-container">
-                    <CardContent className="p-4 text-center">
-                      <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold">{winners.length}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Winners</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Featured Tournaments Management */}
-                  <AdminFeaturedTournaments />
-                  
-                  {/* Tournament Registrations Management */}
-                  <Card className="morph-container">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="h-5 w-5" />
-                          <span>Tournament Registrations ({filteredRegistrations.length})</span>
-                        </div>
-                        <Button onClick={exportRegistrationsCSV} variant="outline" className="morph-button">
-                          <Download className="h-4 w-4 mr-2" />
-                          Export CSV
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Filters */}
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                          <Label>Search Players</Label>
-                          <div className="relative">
-                            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <Input
-                              placeholder="Search by name, email, UID..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="morph-input pl-10"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label>Tournament Type</Label>
-                          <Select value={registrationFilter} onValueChange={setRegistrationFilter}>
-                            <SelectTrigger className="morph-input">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Types</SelectItem>
-                              <SelectItem value="solo">Solo</SelectItem>
-                              <SelectItem value="duo">Duo</SelectItem>
-                              <SelectItem value="squad">Squad</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label>Payment Status</Label>
-                          <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                            <SelectTrigger className="morph-input">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Status</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="failed">Failed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-end">
-                          <Button 
-                            onClick={() => {
-                              setSearchTerm('');
-                              setRegistrationFilter('all');
-                              setPaymentFilter('all');
-                            }}
-                            variant="outline" 
-                            className="morph-button w-full"
+                          <Badge 
+                            variant={registration.payment_status === 'paid' ? 'default' : 'secondary'}
+                            className="capitalize"
                           >
-                            <Filter className="h-4 w-4 mr-2" />
-                            Clear
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Registrations Table */}
-                      <div className="rounded-md border max-h-96 overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Player Info</TableHead>
-                              <TableHead>Tournament</TableHead>
-                              <TableHead>Slot Time</TableHead>
-                              <TableHead>Payment Status</TableHead>
-                              <TableHead>Registration Date</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredRegistrations.map((registration) => (
-                              <TableRow key={registration.id}>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium">{registration.player.username}</p>
-                                    <p className="text-sm text-gray-600">{registration.player.email}</p>
-                                    <p className="text-sm text-gray-500">
-                                      IGN: {registration.player.in_game_name || 'N/A'}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                      UID: {registration.player.free_fire_uid || 'N/A'}
-                                    </p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    registration.tournament_type === 'solo' ? 'bg-blue-100 text-blue-800' :
-                                    registration.tournament_type === 'duo' ? 'bg-green-100 text-green-800' :
-                                    'bg-purple-100 text-purple-800'
-                                  }`}>
-                                    {registration.tournament_type.toUpperCase()}
-                                  </span>
-                                </TableCell>
-                                <TableCell>{registration.slot_time}</TableCell>
-                                <TableCell>
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    registration.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                                    registration.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-red-100 text-red-800'
-                                  }`}>
-                                    {registration.payment_status === 'completed' && <CheckCircle className="w-3 h-3 mr-1" />}
-                                    {registration.payment_status === 'failed' && <XCircle className="w-3 h-3 mr-1" />}
-                                    {registration.payment_status}
-                                  </span>
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(registration.created_at).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex space-x-2">
-                                    {registration.payment_status === 'pending' && (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          onClick={() => updatePaymentStatus(registration.id, 'completed')}
-                                          className="bg-green-500 hover:bg-green-600"
-                                        >
-                                          <CheckCircle className="h-3 w-3" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          onClick={() => updatePaymentStatus(registration.id, 'failed')}
-                                        >
-                                          <XCircle className="h-3 w-3" />
-                                        </Button>
-                                      </>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => deleteRegistration(registration.id)}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        {filteredRegistrations.length === 0 && (
-                          <div className="text-center py-8 text-gray-500">
-                            No registrations found matching your criteria.
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tournament Management - Enhanced */}
-                  <Card className="morph-container">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Calendar className="h-5 w-5" />
-                        <span>Tournament Management</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="sm:col-span-2">
-                          <Label className="text-sm font-medium">Tournament Name</Label>
-                          <Input
-                            value={newTournament.name}
-                            onChange={(e) => setNewTournament(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter tournament name"
-                            className="morph-input mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Tournament Type</Label>
-                          <Select 
-                            value={newTournament.type} 
-                            onValueChange={(value) => setNewTournament(prev => ({ ...prev, type: value as TournamentType }))}
-                          >
-                            <SelectTrigger className="morph-input mt-1">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="solo">Solo</SelectItem>
-                              <SelectItem value="duo">Duo</SelectItem>
-                              <SelectItem value="squad">Squad</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Date</Label>
-                          <Input
-                            type="date"
-                            value={newTournament.scheduled_date}
-                            onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                            className="morph-input mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Time</Label>
-                          <Input
-                            type="time"
-                            value={newTournament.scheduled_time}
-                            onChange={(e) => setNewTournament(prev => ({ ...prev, scheduled_time: e.target.value }))}
-                            className="morph-input mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Max Participants</Label>
-                          <Input
-                            type="number"
-                            value={newTournament.max_participants}
-                            onChange={(e) => setNewTournament(prev => ({ ...prev, max_participants: parseInt(e.target.value) }))}
-                            className="morph-input mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium">Prize Pool (₹)</Label>
-                          <Input
-                            type="number"
-                            value={newTournament.prize_pool}
-                            onChange={(e) => setNewTournament(prev => ({ ...prev, prize_pool: parseInt(e.target.value) }))}
-                            className="morph-input mt-1"
-                          />
-                        </div>
-                      </div>
-                      <Button onClick={createTournament} className="morph-button w-full">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Create Tournament
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tournament List Management */}
-                  <Card className="morph-container">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <FileText className="h-5 w-5" />
-                        <span>Tournament List</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3 max-h-64 overflow-y-auto">
-                        {tournaments.map((tournament) => (
-                          <div key={tournament.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <div>
-                              <p className="font-medium">{tournament.name}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">
-                                {tournament.type} • {new Date(tournament.scheduled_date).toLocaleDateString()} • ₹{tournament.prize_pool}
-                              </p>
-                              <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                tournament.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-                                tournament.status === 'active' ? 'bg-green-100 text-green-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {tournament.status}
-                              </span>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button size="sm" variant="outline">Edit</Button>
-                              <Button size="sm" variant="destructive">Delete</Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Settings Management */}
-                  <Card className="morph-container">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Settings className="h-5 w-5" />
-                        <span>Tournament Settings</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Solo Entry Fee</Label>
-                          <Input
-                            value={settings.entry_fee_solo}
-                            onChange={(e) => updateSettings('entry_fee_solo', e.target.value)}
-                            className="morph-input"
-                          />
-                        </div>
-                        <div>
-                          <Label>Duo Entry Fee</Label>
-                          <Input
-                            value={settings.entry_fee_duo}
-                            onChange={(e) => updateSettings('entry_fee_duo', e.target.value)}
-                            className="morph-input"
-                          />
-                        </div>
-                        <div>
-                          <Label>Squad Entry Fee</Label>
-                          <Input
-                            value={settings.entry_fee_squad}
-                            onChange={(e) => updateSettings('entry_fee_squad', e.target.value)}
-                            className="morph-input"
-                          />
-                        </div>
-                        <div>
-                          <Label>UPI ID</Label>
-                          <Input
-                            value={settings.upi_id}
-                            onChange={(e) => updateSettings('upi_id', e.target.value)}
-                            className="morph-input"
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Player Management */}
-                  <Card className="morph-container">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Users className="h-5 w-5" />
-                          <span>Player Management ({allPlayers.length} players)</span>
-                        </div>
-                        <Button onClick={exportPlayersCSV} variant="outline" className="morph-button">
-                          <Download className="h-4 w-4 mr-2" />
-                          Export CSV
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {allPlayers.map((player) => (
-                          <div key={player.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <div>
-                              <p className="font-medium">{player.username}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">
-                                {player.in_game_name} • {player.free_fire_uid}
-                              </p>
-                              <p className="text-xs text-gray-500">{player.email}</p>
-                            </div>
-                            <Button
-                              onClick={() => removePlayer(player.id)}
-                              variant="destructive"
-                              size="sm"
-                              className="morph-button"
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Winner Management */}
-                  <Card className="morph-container">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Trophy className="h-5 w-5" />
-                        <span>Winner Management</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Winner Name</Label>
-                          <Input
-                            value={newWinnerName}
-                            onChange={(e) => setNewWinnerName(e.target.value)}
-                            placeholder="Enter winner's name"
-                            className="morph-input"
-                          />
-                        </div>
-                        <div>
-                          <Label>Tournament Type</Label>
-                          <Select value={newWinnerType} onValueChange={(value) => setNewWinnerType(value as TournamentType)}>
-                            <SelectTrigger className="morph-input">
-                              <SelectValue placeholder="Select tournament type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="solo">Solo</SelectItem>
-                              <SelectItem value="duo">Duo</SelectItem>
-                              <SelectItem value="squad">Squad</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <Button onClick={addWinner} className="morph-button">
-                        <Trophy className="h-4 w-4 mr-2" />
-                        Add Winner
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* System Notifications */}
-                  <Card className="morph-container">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Bell className="h-5 w-5" />
-                        <span>System Notifications</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <div className="flex items-center space-x-2 text-blue-800 dark:text-blue-200">
-                          <Bell className="h-4 w-4" />
-                          <span className="font-medium">System Status: Operational</span>
-                        </div>
-                        <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-                          All systems are running smoothly. Last check: {new Date().toLocaleTimeString()}
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" className="morph-button flex-1">
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Send Notification
-                        </Button>
-                        <Button variant="outline" className="morph-button flex-1">
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Analytics
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-
-            {/* Winners Section - Always visible when not in admin mode */}
-            {!isAdminMode && (
-              <Card className="morph-container">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    <span>Latest Winners</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {winners.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {winners.slice(0, 6).map((winner) => (
-                        <div key={winner.id} className="morph-winner-card p-4 text-center">
-                          {winner.image_url ? (
-                            <img
-                              src={winner.image_url}
-                              alt={winner.player_name}
-                              className="w-16 h-16 object-cover rounded-full mx-auto mb-3 border-2 border-yellow-500"
-                              onError={(e) => {
-                                console.error('Failed to load winner image:', winner.image_url);
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                          )}
-                          <h3 className="font-bold text-lg">{winner.player_name}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 capitalize">
-                            {winner.tournament_type} Tournament Winner
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(winner.tournament_date).toLocaleDateString()}
-                          </p>
+                            {registration.payment_status}
+                          </Badge>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <Trophy className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>No winners yet. Be the first champion!</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </>
-        ) : (
-          <>
-            {/* Welcome section for non-signed-in users */}
-            <div className="text-center py-12 md:py-20 px-4">
-              <Trophy className="h-12 w-12 md:h-16 md:w-16 text-orange-500 mx-auto mb-4 md:mb-6" />
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">Welcome to FF Arena</h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 md:mb-8 max-w-md mx-auto text-sm md:text-base">
-                Join the ultimate Free Fire tournament platform. Sign up to compete, win prizes, and become a champion!
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 sm:space-x-4 sm:space-y-0 justify-center">
-                <SignUpButton>
-                  <Button size="lg" className="morph-button w-full sm:w-auto">
-                    Get Started
-                  </Button>
-                </SignUpButton>
-                <SignInButton>
-                  <Button variant="outline" size="lg" className="morph-button w-full sm:w-auto">
-                    Sign In
-                  </Button>
-                </SignInButton>
-              </div>
-            </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {/* Winners Section for non-signed-in users */}
-            <Card className="morph-container">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
-                  <span>Recent Champions</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {winners.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {winners.slice(0, 6).map((winner) => (
-                      <div key={winner.id} className="morph-winner-card p-4 text-center">
-                        {winner.image_url ? (
-                          <img
-                            src={winner.image_url}
-                            alt={winner.player_name}
-                            className="w-16 h-16 object-cover rounded-full mx-auto mb-3 border-2 border-yellow-500"
-                            onError={(e) => {
-                              console.error('Failed to load winner image:', winner.image_url);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                        )}
-                        <h3 className="font-bold text-lg">{winner.player_name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 capitalize">
-                          {winner.tournament_type} Tournament Winner
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(winner.tournament_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Trophy className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>No winners yet. Sign up to become the first champion!</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </>
-        )}
+              <TabsContent value="winners">
+                <AdminWinnerForm />
+              </TabsContent>
+
+              <TabsContent value="featured">
+                <AdminFeaturedTournaments />
+              </TabsContent>
+            </>
+          )}
+        </Tabs>
       </main>
-
-      {/* Payment Modal - Updated with latest QR code */}
-      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="w-[95vw] max-w-md mx-auto">
-          <DialogHeader>
-            <DialogTitle>Complete Payment</DialogTitle>
-            <DialogDescription>
-              Scan the QR code or use the UPI ID to complete your tournament payment.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="text-center space-y-4">
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <p className="font-semibold text-lg">Amount: ₹{selectedTournament?.entry_fee}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">UPI ID: {settings.upi_id}</p>
-              {selectedTournament && (
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                  Tournament: {selectedTournament.name}
-                </p>
-              )}
-            </div>
-            
-            <div className="flex justify-center">
-              <div>
-                <img 
-                  src="/lovable-uploads/6a22c5b4-509e-4cf0-b43c-3d7f68b83af2.png" 
-                  alt="Payment QR Code" 
-                  className="w-40 h-40 md:w-48 md:h-48 border rounded-lg shadow-lg"
-                />
-              </div>
-            </div>
-            
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300">
-              Scan the QR code or use the UPI ID to complete payment
-            </p>
-            
-            <Button 
-              onClick={handlePaymentComplete} 
-              className="morph-button w-full"
-            >
-              I've Paid
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
